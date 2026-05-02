@@ -1,0 +1,74 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "d3f19d0a3512b4fab29220b89ef84460",
+    "packages": [
+        {
+            "name": "aayushgauba/aiwaf",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/aiwaf-project/aiwaf-php.git",
+                "reference": "f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/aiwaf-project/aiwaf-php/zipball/f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf",
+                "reference": "f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4"
+            },
+            "require-dev": {
+                "illuminate/console": "^8.83",
+                "illuminate/routing": "^8.83",
+                "illuminate/support": "^8.83",
+                "phpunit/phpunit": "^9.6",
+                "symfony/console": "^5.4",
+                "symfony/routing": "^5.4",
+                "wp-cli/wp-cli-bundle": "^2.9"
+            },
+            "suggest": {
+                "ext-redis": "Required only when using AIWAF\\Adapters\\RedisAdapter and Redis rate limit driver"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "AIWAF\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Aayush Gauba",
+                    "email": "gauba.aayush@gmail.com"
+                }
+            ],
+            "description": "Adaptive Intelligent Web Application Firewall for PHP",
+            "support": {
+                "issues": "https://github.com/aiwaf-project/aiwaf-php/issues",
+                "source": "https://github.com/aiwaf-project/aiwaf-php/tree/main"
+            },
+            "time": "2026-04-20T00:05:05+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "aayushgauba/aiwaf": 20
+    },
+    "prefer-stable": true,
+    "prefer-lowest": false,
+    "platform": {},
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}

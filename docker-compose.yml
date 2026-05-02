@@ -1,0 +1,389 @@
+services:
+  juice:
+    image: bkimminich/juice-shop
+    container_name: juice_shop_all
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', r => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  aiwaf-django:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-django-proxy/Dockerfile
+    container_name: aiwaf_django_proxy_all
+    ports:
+      - "3009:3009"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3009
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_DISABLE_AI: "true"
+      AIWAF_USE_RUST: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG: /logs/aiwaf-requests.log
+      AIWAF_MIDDLEWARE_CSV: "true"
+      AIWAF_MIDDLEWARE_DB: "false"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf-flask:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-flask-proxy/Dockerfile
+    container_name: aiwaf_flask_proxy_all
+    ports:
+      - "3010:3010"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3010
+      AIWAF_LOG_DIR: /logs
+      AIWAF_LOG_FORMAT: json
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_FORCE_AI: "false"
+      AIWAF_USE_RUST: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf-fastapi:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-fastapi-proxy/Dockerfile
+    container_name: aiwaf_fastapi_proxy_all
+    ports:
+      - "3011:3011"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3011
+      AIWAF_LOG_DIR: /logs
+      AIWAF_LOG_FORMAT: json
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
+    container_name: aiwaf_proxy_all
+    ports:
+      - "3000:3000"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3000
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_fastify:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-fastify-proxy/Dockerfile
+    container_name: aiwaf_fastify_proxy_all
+    ports:
+      - "3002:3002"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3002
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_hapi:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-hapi-proxy/Dockerfile
+    container_name: aiwaf_hapi_proxy_all
+    ports:
+      - "3003:3003"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3003
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_koa:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-koa-proxy/Dockerfile
+    container_name: aiwaf_koa_proxy_all
+    ports:
+      - "3004:3004"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3004
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_nest:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-nest-proxy/Dockerfile
+    container_name: aiwaf_nest_proxy_all
+    ports:
+      - "3005:3005"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3005
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_next:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-next-proxy/Dockerfile
+    container_name: aiwaf_next_proxy_all
+    ports:
+      - "3006:3006"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3006
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_adonis:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-adonis-proxy/Dockerfile
+    container_name: aiwaf_adonis_proxy_all
+    ports:
+      - "3007:3007"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3007
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf_sails:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-sails-proxy/Dockerfile
+    container_name: aiwaf_sails_proxy_all
+    ports:
+      - "3008:3008"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 3008
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_CLEAR_STATE_ON_START: "true"
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_WASM_HEADER_VALIDATION: "false"
+      AIWAF_DEBUG_WASM_HEADERS: "true"
+      AIWAF_MIDDLEWARE_LOGGING: "true"
+      AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
+      AIWAF_DEBUG_HEADERS: "true"
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
+
+  aiwaf-laravel-php81:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-laravel/Dockerfile
+    container_name: aiwaf_laravel_php81_all
+    ports:
+      - "8081:8081"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8081
+      AIWAF_ACCESS_LOG: /workspace/resources/access.log
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_DISABLE_AI: "true"
+      AIWAF_RATE_LIMIT_BACKEND: "db"
+      AIWAF_RATE_LIMIT_DB_PATH: /workspace/resources/aiwaf.sqlite
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_resources:/workspace/resources
+
+  aiwaf-symfony-php82:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-symfony/Dockerfile
+    container_name: aiwaf_symfony_php82_all
+    ports:
+      - "8082:8082"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8082
+      AIWAF_ACCESS_LOG: /workspace/resources/access.log
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_DISABLE_AI: "true"
+      AIWAF_RATE_LIMIT_BACKEND: "db"
+      AIWAF_RATE_LIMIT_DB_PATH: /workspace/resources/aiwaf.sqlite
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_resources:/workspace/resources
+
+  aiwaf-wordpress-php80:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-wordpress/Dockerfile
+    container_name: aiwaf_wordpress_php80_all
+    ports:
+      - "8083:8083"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8083
+      AIWAF_ACCESS_LOG: /workspace/resources/access.log
+      AIWAF_MIN_AI_LOGS: "10000"
+      AIWAF_DISABLE_AI: "true"
+      AIWAF_RATE_LIMIT_BACKEND: "db"
+      AIWAF_RATE_LIMIT_DB_PATH: /workspace/resources/aiwaf.sqlite
+    depends_on:
+      juice:
+        condition: service_started
+    volumes:
+      - aiwaf_resources:/workspace/resources
+
+  aiwaf-java:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-java/Dockerfile
+    container_name: aiwaf_java_proxy_all
+    ports:
+      - "8080:8080"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8080
+    depends_on:
+      juice:
+        condition: service_started
+
+  aiwaf-spring:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-spring/Dockerfile
+    container_name: aiwaf_spring_proxy_all
+    ports:
+      - "8084:8084"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8084
+    depends_on:
+      juice:
+        condition: service_started
+
+  aiwaf-trainer:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-trainer/Dockerfile
+    container_name: aiwaf_trainer_all
+    environment:
+      AIWAF_ACCESS_LOG: /workspace/resources/access.log
+      AIWAF_MIN_AI_LOGS: "50"
+    volumes:
+      - aiwaf_resources:/workspace/resources
+    profiles:
+      - trainer
+
+  aiwaf-tests:
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-tests/Dockerfile
+    container_name: aiwaf_tests_all
+    volumes:
+      - aiwaf_resources:/workspace/resources
+    profiles:
+      - tests
+
+volumes:
+  aiwaf_logs:
+  aiwaf_resources:

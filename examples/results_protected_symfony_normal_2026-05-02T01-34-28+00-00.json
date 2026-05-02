@@ -1,0 +1,19 @@
+{
+    "target": "protected_symfony",
+    "baseUrl": "http://localhost:8082",
+    "runId": "protected_symfony_normal_2026-05-02T01-34-28+00-00",
+    "startedAt": "2026-05-02T01:34:36+00:00",
+    "attacks": [
+        {
+            "attack_type": "normal_traffic",
+            "requests_sent": 10,
+            "status_counts": {
+                "200": 10
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 5.5
+        }
+    ],
+    "finishedAt": "2026-05-02T01:34:37+00:00"
+}

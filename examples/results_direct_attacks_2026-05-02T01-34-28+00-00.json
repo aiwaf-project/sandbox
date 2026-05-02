@@ -1,0 +1,129 @@
+{
+    "target": "direct",
+    "baseUrl": "http://localhost:3001",
+    "runId": "direct_attacks_2026-05-02T01-34-28+00-00",
+    "startedAt": "2026-05-02T01:34:29+00:00",
+    "attacks": [
+        {
+            "attack_type": "brute_force",
+            "requests_sent": 50,
+            "status_counts": {
+                "401": 50
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 39.82
+        },
+        {
+            "attack_type": "credential_stuffing",
+            "requests_sent": 40,
+            "status_counts": {
+                "200": 10,
+                "401": 30
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 37.975
+        },
+        {
+            "attack_type": "path_probe",
+            "requests_sent": 12,
+            "status_counts": {
+                "200": 11,
+                "500": 1
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 15.666666666666666
+        },
+        {
+            "attack_type": "header_probe",
+            "requests_sent": 1,
+            "status_counts": {
+                "200": 1
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 8
+        },
+        {
+            "attack_type": "header_variations",
+            "requests_sent": 5,
+            "status_counts": {
+                "200": 5
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 7
+        },
+        {
+            "attack_type": "burst",
+            "requests_sent": 30,
+            "status_counts": {
+                "200": 30
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 86.93333333333334
+        },
+        {
+            "attack_type": "burst_mixed",
+            "requests_sent": 40,
+            "status_counts": {
+                "200": 14,
+                "500": 13,
+                "401": 13
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 944.325
+        },
+        {
+            "attack_type": "query_injection",
+            "requests_sent": 3,
+            "status_counts": {
+                "0": 1,
+                "200": 1,
+                "500": 1
+            },
+            "blocked": 0,
+            "errors": 1,
+            "avg_response_time_ms": 100
+        },
+        {
+            "attack_type": "owasp_top10",
+            "requests_sent": 16,
+            "status_counts": {
+                "0": 1,
+                "200": 11,
+                "401": 2,
+                "301": 1,
+                "500": 1
+            },
+            "blocked": 0,
+            "errors": 1,
+            "avg_response_time_ms": 28.25
+        },
+        {
+            "attack_type": "long_path",
+            "requests_sent": 1,
+            "status_counts": {
+                "200": 1
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 41
+        },
+        {
+            "attack_type": "method_probe",
+            "requests_sent": 3,
+            "status_counts": {
+                "500": 3
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 10.666666666666666
+        }
+    ],
+    "finishedAt": "2026-05-02T01:34:35+00:00"
+}

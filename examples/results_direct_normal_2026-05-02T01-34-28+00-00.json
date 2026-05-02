@@ -1,0 +1,21 @@
+{
+    "target": "direct",
+    "baseUrl": "http://localhost:3001",
+    "runId": "direct_normal_2026-05-02T01-34-28+00-00",
+    "startedAt": "2026-05-02T01:34:28+00:00",
+    "attacks": [
+        {
+            "attack_type": "normal_traffic",
+            "requests_sent": 10,
+            "status_counts": {
+                "200": 6,
+                "500": 3,
+                "401": 1
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 18.4
+        }
+    ],
+    "finishedAt": "2026-05-02T01:34:29+00:00"
+}

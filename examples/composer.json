@@ -1,0 +1,9 @@
+{
+  "name": "aiwaf/examples-sandbox",
+  "type": "project",
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {
+    "aayushgauba/aiwaf": "dev-main"
+  }
+}

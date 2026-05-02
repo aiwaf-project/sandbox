@@ -1,0 +1,29 @@
+services:
+  aiwaf-java:
+    build:
+      context: ..
+      dockerfile: examples/sandbox/aiwaf-java/Dockerfile
+    environment:
+      PORT: 8080
+      TARGET_BASE_URL: http://juice:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - juice
+
+  aiwaf-spring:
+    build:
+      context: ..
+      dockerfile: examples/sandbox/aiwaf-spring/Dockerfile
+    environment:
+      PORT: 8081
+      TARGET_BASE_URL: http://juice:3000
+    ports:
+      - "8081:8081"
+    depends_on:
+      - juice
+
+  juice:
+    image: bkimminich/juice-shop
+    ports:
+      - "3001:3000"

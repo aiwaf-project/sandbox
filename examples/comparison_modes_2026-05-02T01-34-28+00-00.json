@@ -1,0 +1,578 @@
+{
+    "runId": "2026-05-02T01-34-28+00-00",
+    "generatedAt": "2026-05-02T01:34:39+00:00",
+    "normal": [
+        {
+            "target": "direct",
+            "baseUrl": "http://localhost:3001",
+            "runId": "direct_normal_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:28+00:00",
+            "attacks": [
+                {
+                    "attack_type": "normal_traffic",
+                    "requests_sent": 10,
+                    "status_counts": {
+                        "200": 6,
+                        "500": 3,
+                        "401": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 18.4
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:29+00:00"
+        },
+        {
+            "target": "protected_laravel",
+            "baseUrl": "http://localhost:8081",
+            "runId": "protected_laravel_normal_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:35+00:00",
+            "attacks": [
+                {
+                    "attack_type": "normal_traffic",
+                    "requests_sent": 10,
+                    "status_counts": {
+                        "200": 10
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5.6
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:35+00:00"
+        },
+        {
+            "target": "protected_symfony",
+            "baseUrl": "http://localhost:8082",
+            "runId": "protected_symfony_normal_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:36+00:00",
+            "attacks": [
+                {
+                    "attack_type": "normal_traffic",
+                    "requests_sent": 10,
+                    "status_counts": {
+                        "200": 10
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5.5
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:37+00:00"
+        },
+        {
+            "target": "protected_wordpress",
+            "baseUrl": "http://localhost:8083",
+            "runId": "protected_wordpress_normal_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:37+00:00",
+            "attacks": [
+                {
+                    "attack_type": "normal_traffic",
+                    "requests_sent": 10,
+                    "status_counts": {
+                        "200": 10
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.8
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:38+00:00"
+        }
+    ],
+    "attacks": [
+        {
+            "target": "direct",
+            "baseUrl": "http://localhost:3001",
+            "runId": "direct_attacks_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:29+00:00",
+            "attacks": [
+                {
+                    "attack_type": "brute_force",
+                    "requests_sent": 50,
+                    "status_counts": {
+                        "401": 50
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 39.82
+                },
+                {
+                    "attack_type": "credential_stuffing",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 10,
+                        "401": 30
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 37.975
+                },
+                {
+                    "attack_type": "path_probe",
+                    "requests_sent": 12,
+                    "status_counts": {
+                        "200": 11,
+                        "500": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 15.666666666666666
+                },
+                {
+                    "attack_type": "header_probe",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 8
+                },
+                {
+                    "attack_type": "header_variations",
+                    "requests_sent": 5,
+                    "status_counts": {
+                        "200": 5
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 7
+                },
+                {
+                    "attack_type": "burst",
+                    "requests_sent": 30,
+                    "status_counts": {
+                        "200": 30
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 86.93333333333334
+                },
+                {
+                    "attack_type": "burst_mixed",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 14,
+                        "500": 13,
+                        "401": 13
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 944.325
+                },
+                {
+                    "attack_type": "query_injection",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 1,
+                        "500": 1
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 100
+                },
+                {
+                    "attack_type": "owasp_top10",
+                    "requests_sent": 16,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 11,
+                        "401": 2,
+                        "301": 1,
+                        "500": 1
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 28.25
+                },
+                {
+                    "attack_type": "long_path",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 41
+                },
+                {
+                    "attack_type": "method_probe",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "500": 3
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 10.666666666666666
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:35+00:00"
+        },
+        {
+            "target": "protected_laravel",
+            "baseUrl": "http://localhost:8081",
+            "runId": "protected_laravel_attacks_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:35+00:00",
+            "attacks": [
+                {
+                    "attack_type": "brute_force",
+                    "requests_sent": 50,
+                    "status_counts": {
+                        "200": 50
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5.7
+                },
+                {
+                    "attack_type": "credential_stuffing",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.525
+                },
+                {
+                    "attack_type": "path_probe",
+                    "requests_sent": 12,
+                    "status_counts": {
+                        "200": 12
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.666666666666667
+                },
+                {
+                    "attack_type": "header_probe",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4
+                },
+                {
+                    "attack_type": "header_variations",
+                    "requests_sent": 5,
+                    "status_counts": {
+                        "200": 5
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.8
+                },
+                {
+                    "attack_type": "burst",
+                    "requests_sent": 30,
+                    "status_counts": {
+                        "200": 30
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 67
+                },
+                {
+                    "attack_type": "burst_mixed",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 83.75
+                },
+                {
+                    "attack_type": "query_injection",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 2
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 3
+                },
+                {
+                    "attack_type": "owasp_top10",
+                    "requests_sent": 16,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 15
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 4.125
+                },
+                {
+                    "attack_type": "long_path",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4
+                },
+                {
+                    "attack_type": "method_probe",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "200": 3
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:36+00:00"
+        },
+        {
+            "target": "protected_symfony",
+            "baseUrl": "http://localhost:8082",
+            "runId": "protected_symfony_attacks_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:37+00:00",
+            "attacks": [
+                {
+                    "attack_type": "brute_force",
+                    "requests_sent": 50,
+                    "status_counts": {
+                        "200": 50
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.68
+                },
+                {
+                    "attack_type": "credential_stuffing",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 3.475
+                },
+                {
+                    "attack_type": "path_probe",
+                    "requests_sent": 12,
+                    "status_counts": {
+                        "200": 12
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 3.5833333333333335
+                },
+                {
+                    "attack_type": "header_probe",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 3
+                },
+                {
+                    "attack_type": "header_variations",
+                    "requests_sent": 5,
+                    "status_counts": {
+                        "200": 5
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 3.8
+                },
+                {
+                    "attack_type": "burst",
+                    "requests_sent": 30,
+                    "status_counts": {
+                        "200": 30
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 45
+                },
+                {
+                    "attack_type": "burst_mixed",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 57.7
+                },
+                {
+                    "attack_type": "query_injection",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 2
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 2.3333333333333335
+                },
+                {
+                    "attack_type": "owasp_top10",
+                    "requests_sent": 16,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 15
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 2.875
+                },
+                {
+                    "attack_type": "long_path",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4
+                },
+                {
+                    "attack_type": "method_probe",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "200": 3
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 3.3333333333333335
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:37+00:00"
+        },
+        {
+            "target": "protected_wordpress",
+            "baseUrl": "http://localhost:8083",
+            "runId": "protected_wordpress_attacks_2026-05-02T01-34-28+00-00",
+            "startedAt": "2026-05-02T01:34:38+00:00",
+            "attacks": [
+                {
+                    "attack_type": "brute_force",
+                    "requests_sent": 50,
+                    "status_counts": {
+                        "200": 50
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.42
+                },
+                {
+                    "attack_type": "credential_stuffing",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.325
+                },
+                {
+                    "attack_type": "path_probe",
+                    "requests_sent": 12,
+                    "status_counts": {
+                        "200": 12
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.666666666666667
+                },
+                {
+                    "attack_type": "header_probe",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5
+                },
+                {
+                    "attack_type": "header_variations",
+                    "requests_sent": 5,
+                    "status_counts": {
+                        "200": 5
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 6.6
+                },
+                {
+                    "attack_type": "burst",
+                    "requests_sent": 30,
+                    "status_counts": {
+                        "200": 30
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 61
+                },
+                {
+                    "attack_type": "burst_mixed",
+                    "requests_sent": 40,
+                    "status_counts": {
+                        "200": 40
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 90.675
+                },
+                {
+                    "attack_type": "query_injection",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 2
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 3.3333333333333335
+                },
+                {
+                    "attack_type": "owasp_top10",
+                    "requests_sent": 16,
+                    "status_counts": {
+                        "0": 1,
+                        "200": 15
+                    },
+                    "blocked": 0,
+                    "errors": 1,
+                    "avg_response_time_ms": 3.6875
+                },
+                {
+                    "attack_type": "long_path",
+                    "requests_sent": 1,
+                    "status_counts": {
+                        "200": 1
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 5
+                },
+                {
+                    "attack_type": "method_probe",
+                    "requests_sent": 3,
+                    "status_counts": {
+                        "200": 3
+                    },
+                    "blocked": 0,
+                    "errors": 0,
+                    "avg_response_time_ms": 4.333333333333333
+                }
+            ],
+            "finishedAt": "2026-05-02T01:34:39+00:00"
+        }
+    ]
+}

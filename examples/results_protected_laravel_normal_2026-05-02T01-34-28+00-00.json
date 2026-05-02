@@ -1,0 +1,19 @@
+{
+    "target": "protected_laravel",
+    "baseUrl": "http://localhost:8081",
+    "runId": "protected_laravel_normal_2026-05-02T01-34-28+00-00",
+    "startedAt": "2026-05-02T01:34:35+00:00",
+    "attacks": [
+        {
+            "attack_type": "normal_traffic",
+            "requests_sent": 10,
+            "status_counts": {
+                "200": 10
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 5.6
+        }
+    ],
+    "finishedAt": "2026-05-02T01:34:35+00:00"
+}

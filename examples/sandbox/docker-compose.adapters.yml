@@ -1,0 +1,36 @@
+services:
+  adapter-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  adapter-mysql:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: aiwaf
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -proot || mysqladmin ping -h localhost -proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+
+  aiwaf-adapter-tests:
+    build:
+      context: ../..
+      dockerfile: examples/sandbox/aiwaf-adapter-tests/Dockerfile
+    depends_on:
+      adapter-redis:
+        condition: service_healthy
+      adapter-mysql:
+        condition: service_healthy
+    environment:
+      AIWAF_TEST_REDIS_HOST: adapter-redis
+      AIWAF_TEST_REDIS_PORT: "6379"
+      AIWAF_TEST_DB_DSN: "mysql:host=adapter-mysql;port=3306;dbname=aiwaf;charset=utf8mb4"
+      AIWAF_TEST_DB_USER: root
+      AIWAF_TEST_DB_PASS: root
+    command: ["./vendor/bin/phpunit", "--colors=never", "--do-not-cache-result", "--filter", "TestAdaptersParity|TestAdapterIntegration"]

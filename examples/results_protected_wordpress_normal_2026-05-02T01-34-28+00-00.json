@@ -1,0 +1,19 @@
+{
+    "target": "protected_wordpress",
+    "baseUrl": "http://localhost:8083",
+    "runId": "protected_wordpress_normal_2026-05-02T01-34-28+00-00",
+    "startedAt": "2026-05-02T01:34:37+00:00",
+    "attacks": [
+        {
+            "attack_type": "normal_traffic",
+            "requests_sent": 10,
+            "status_counts": {
+                "200": 10
+            },
+            "blocked": 0,
+            "errors": 0,
+            "avg_response_time_ms": 4.8
+        }
+    ],
+    "finishedAt": "2026-05-02T01:34:38+00:00"
+}
