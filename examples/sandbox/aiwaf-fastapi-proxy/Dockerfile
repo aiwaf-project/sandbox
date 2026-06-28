@@ -10,4 +10,6 @@ WORKDIR /workspace/examples/sandbox/aiwaf-fastapi-proxy
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+RUN python -m aiwaf.cli init --framework fastapi --app app:app
+
 CMD ["python", "app.py"]

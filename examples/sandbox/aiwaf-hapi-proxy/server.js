@@ -12,6 +12,7 @@ async function start() {
   await server.register({
     plugin: aiwaf.hapi,
     options: {
+      middlewares: ['auto'],
       staticKeywords: ['.php', '.env', '.git', '../'],
       dynamicTopN: 5,
       WINDOW_SEC: 10,

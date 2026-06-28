@@ -15,4 +15,6 @@ RUN mkdir -p node_modules/aiwaf-js/node_modules && ln -sf ../../aiwaf-wasm node_
 
 EXPOSE 3000
 
+RUN npx aiwaf manifest --framework express --output .aiwaf/paths.json
+
 CMD ["npm", "start"]

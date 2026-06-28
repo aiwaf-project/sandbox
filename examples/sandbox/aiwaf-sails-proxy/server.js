@@ -14,6 +14,7 @@ app.use((req, res, next) => {
 });
 
 app.use(aiwaf.sails({
+  middlewares: ['auto'],
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,

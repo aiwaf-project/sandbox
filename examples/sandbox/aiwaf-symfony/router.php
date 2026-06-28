@@ -10,8 +10,15 @@ use AIWAF\Adapters\DbAdapter;
 use AIWAF\Config;
 use AIWAF\RateLimiter;
 
-Config::$knownPaths = ["/_profiler", "/_wdt", "/api", "/assets"];
-Config::$keywordDetectionThreshold = 2;
+Config::$knownPaths = ['/_profiler', '/_wdt', '/api', '/assets'];
+Config::$keywordDetectionThreshold = 1;
+if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $parts = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
+    $ip = trim((string) ($parts[0] ?? ''));
+    if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+        $_SERVER['REMOTE_ADDR'] = $ip;
+    }
+}
 $dbPath = (string) (getenv('AIWAF_RATE_LIMIT_DB_PATH') ?: (__DIR__ . '/../../../resources/aiwaf.sqlite'));
 $pdo = new PDO('sqlite:' . $dbPath);
 RateLimiter::initAdapter(new DbAdapter($pdo));

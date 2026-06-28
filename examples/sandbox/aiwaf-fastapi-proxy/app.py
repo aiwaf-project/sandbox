@@ -29,6 +29,7 @@ app = FastAPI(title="AIWAF FastAPI Proxy", lifespan=lifespan)
 # Apply AIWAF middleware stack with sandbox-friendly defaults.
 AIWAF(
     app,
+    middlewares=["auto"],
     storage={"backend": "memory"},
     logging_middleware={
         "enabled": True,

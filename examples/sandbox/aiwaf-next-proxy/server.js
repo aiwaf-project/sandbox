@@ -34,6 +34,7 @@ async function start() {
   };
 
   const wrapped = aiwaf.next(handler, {
+    middlewares: ['auto'],
     staticKeywords: ['.php', '.env', '.git', '../'],
     dynamicTopN: 5,
     WINDOW_SEC: 10,

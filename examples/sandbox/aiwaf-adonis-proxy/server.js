@@ -43,6 +43,7 @@ function createCtx(req, res) {
 }
 
 const middleware = aiwaf.adonis({
+  middlewares: ['auto'],
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,

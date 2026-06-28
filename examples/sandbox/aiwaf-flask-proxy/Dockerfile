@@ -10,4 +10,6 @@ WORKDIR /workspace/examples/sandbox/aiwaf-flask-proxy
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+RUN python -m aiwaf.cli init --framework flask --app app:create_app
+
 CMD ["python", "app.py"]

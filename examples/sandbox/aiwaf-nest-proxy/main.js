@@ -14,7 +14,8 @@ Module({})(AppModule);
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(aiwaf({
+  app.use(aiwaf.nest({
+    middlewares: ['auto'],
     staticKeywords: ['.php', '.env', '.git', '../'],
     dynamicTopN: 5,
     WINDOW_SEC: 10,

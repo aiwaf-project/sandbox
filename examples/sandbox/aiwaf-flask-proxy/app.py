@@ -49,13 +49,7 @@ def create_app():
     register_aiwaf_middlewares(
         app,
         middlewares=[
-            "logging",
-            "header_validation",
-            "ip_keyword_block",
-            "rate_limit",
-            "geo_block",
-            "ai_anomaly",
-            "uuid_tamper",
+            "auto",
         ],
     )
 

@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/aiwaf-project/aiwaf-php.git",
-                "reference": "f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf"
+                "reference": "694c58d899b23bdd4d451066096592f700bb9da3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aiwaf-project/aiwaf-php/zipball/f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf",
-                "reference": "f95ffbaf70cb98c4fa15bbf83a1ebb02188047bf",
+                "url": "https://api.github.com/repos/aiwaf-project/aiwaf-php/zipball/694c58d899b23bdd4d451066096592f700bb9da3",
+                "reference": "694c58d899b23bdd4d451066096592f700bb9da3",
                 "shasum": ""
             },
             "require": {
@@ -57,7 +57,7 @@
                 "issues": "https://github.com/aiwaf-project/aiwaf-php/issues",
                 "source": "https://github.com/aiwaf-project/aiwaf-php/tree/main"
             },
-            "time": "2026-04-20T00:05:05+00:00"
+            "time": "2026-05-02T02:12:24+00:00"
         }
     ],
     "packages-dev": [],

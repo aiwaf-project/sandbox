@@ -12,4 +12,5 @@ RUN npm_config_build_from_source=true npm install
 RUN mkdir -p node_modules/aiwaf-js/node_modules && ln -sf ../../aiwaf-wasm node_modules/aiwaf-js/node_modules/aiwaf-wasm
 
 EXPOSE 3006
+RUN npx aiwaf manifest --framework next --output .aiwaf/paths.json
 CMD ["npm", "start"]

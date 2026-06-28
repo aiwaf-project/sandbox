@@ -15,6 +15,7 @@ app.use((ctx, next) => {
 });
 
 app.use(aiwaf.koa({
+  middlewares: ['auto'],
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,
