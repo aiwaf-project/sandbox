@@ -20,6 +20,7 @@ services:
 
   aiwaf-adapter-tests:
     build:
+      no_cache: true
       context: ../..
       dockerfile: examples/sandbox/aiwaf-adapter-tests/Dockerfile
     depends_on:

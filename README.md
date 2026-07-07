@@ -59,6 +59,8 @@ Core components:
 
 - `protected_java`
 - `protected_spring`
+- `protected_java_r`
+- `protected_spring_r`
 
 ### Baseline target
 

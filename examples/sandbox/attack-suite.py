@@ -637,6 +637,8 @@ def run_default_comparison() -> None:
         {"name": "protected_wordpress", "url": "http://localhost:8083"},
         {"name": "protected_java", "url": "http://localhost:8080"},
         {"name": "protected_spring", "url": "http://localhost:8084"},
+        {"name": "protected_java_r", "url": "http://localhost:8085"},
+        {"name": "protected_spring_r", "url": "http://localhost:8086"},
     ]
 
     all_reports: Dict[str, List[Dict[str, Any]]] = {"normal": [], "attacks": []}

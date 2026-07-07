@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /workspace
 COPY . /workspace
 
-RUN pip install --no-cache-dir "Django>=3.2" requests aiwaf aiwaf-rust
+RUN pip install --default-timeout=1000 --no-cache-dir "Django>=3.2" requests aiwaf aiwaf-rust
 
 WORKDIR /workspace/examples/sandbox/aiwaf-django-proxy
 

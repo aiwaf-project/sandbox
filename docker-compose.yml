@@ -13,6 +13,7 @@ services:
 
   aiwaf-django:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-django-proxy/Dockerfile
     container_name: aiwaf_django_proxy_all
@@ -41,6 +42,7 @@ services:
 
   aiwaf-flask:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-flask-proxy/Dockerfile
     container_name: aiwaf_flask_proxy_all
@@ -62,6 +64,7 @@ services:
 
   aiwaf-fastapi:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-fastapi-proxy/Dockerfile
     container_name: aiwaf_fastapi_proxy_all
@@ -80,6 +83,7 @@ services:
 
   aiwaf:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
     container_name: aiwaf_proxy_all
@@ -104,6 +108,7 @@ services:
 
   aiwaf_fastify:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-fastify-proxy/Dockerfile
     container_name: aiwaf_fastify_proxy_all
@@ -128,6 +133,7 @@ services:
 
   aiwaf_hapi:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-hapi-proxy/Dockerfile
     container_name: aiwaf_hapi_proxy_all
@@ -152,6 +158,7 @@ services:
 
   aiwaf_koa:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-koa-proxy/Dockerfile
     container_name: aiwaf_koa_proxy_all
@@ -176,6 +183,7 @@ services:
 
   aiwaf_nest:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-nest-proxy/Dockerfile
     container_name: aiwaf_nest_proxy_all
@@ -200,6 +208,7 @@ services:
 
   aiwaf_next:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-next-proxy/Dockerfile
     container_name: aiwaf_next_proxy_all
@@ -224,6 +233,7 @@ services:
 
   aiwaf_adonis:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-adonis-proxy/Dockerfile
     container_name: aiwaf_adonis_proxy_all
@@ -248,6 +258,7 @@ services:
 
   aiwaf_sails:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-sails-proxy/Dockerfile
     container_name: aiwaf_sails_proxy_all
@@ -272,6 +283,7 @@ services:
 
   aiwaf-laravel-php81:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-laravel/Dockerfile
     container_name: aiwaf_laravel_php81_all
@@ -293,6 +305,7 @@ services:
 
   aiwaf-symfony-php82:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-symfony/Dockerfile
     container_name: aiwaf_symfony_php82_all
@@ -314,6 +327,7 @@ services:
 
   aiwaf-wordpress-php80:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-wordpress/Dockerfile
     container_name: aiwaf_wordpress_php80_all
@@ -335,6 +349,7 @@ services:
 
   aiwaf-java:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-java/Dockerfile
     container_name: aiwaf_java_proxy_all
@@ -349,6 +364,7 @@ services:
 
   aiwaf-spring:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-spring/Dockerfile
     container_name: aiwaf_spring_proxy_all
@@ -361,8 +377,39 @@ services:
       juice:
         condition: service_started
 
+  aiwaf-java-r:
+    build:
+      no_cache: true
+      context: .
+      dockerfile: examples/sandbox/aiwaf-java-r/Dockerfile
+    container_name: aiwaf_java_r_proxy_all
+    ports:
+      - "8085:8085"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8085
+    depends_on:
+      juice:
+        condition: service_started
+
+  aiwaf-spring-r:
+    build:
+      no_cache: true
+      context: .
+      dockerfile: examples/sandbox/aiwaf-spring-r/Dockerfile
+    container_name: aiwaf_spring_r_proxy_all
+    ports:
+      - "8086:8086"
+    environment:
+      TARGET_BASE_URL: http://juice:3000
+      PORT: 8086
+    depends_on:
+      juice:
+        condition: service_started
+
   aiwaf-trainer:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-trainer/Dockerfile
     container_name: aiwaf_trainer_all
@@ -376,6 +423,7 @@ services:
 
   aiwaf-tests:
     build:
+      no_cache: true
       context: .
       dockerfile: examples/sandbox/aiwaf-tests/Dockerfile
     container_name: aiwaf_tests_all

@@ -27,8 +27,10 @@ The `docker-compose.yml` spins up the following protected proxies:
 * `protected_laravel` - Port 8081
 * `protected_symfony` - Port 8082
 * `protected_wordpress` - Port 8083
-* `protected_java` - Port 8080
-* `protected_spring` - Port 8084
+* `protected_java` - Port 8080 (Standard Temurin JRE)
+* `protected_spring` - Port 8081 (Standard Temurin JRE)
+* `protected_java_r` - Port 8082 (Rocker R-Ver 4.6.1 + JRE)
+* `protected_spring_r` - Port 8083 (Rocker R-Ver 4.6.1 + JRE)
 
 *And the unprotected baseline:*
 * `direct` (Juice Shop directly) - Port 3001
