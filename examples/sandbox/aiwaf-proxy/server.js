@@ -1,6 +1,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const aiwaf = require('aiwaf-js');
+const aiwaf = require('aiwaf');
+const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +15,7 @@ app.use((req, res, next) => {
 });
 
 app.use(aiwaf.auto({
+  cache: redisCache,
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,

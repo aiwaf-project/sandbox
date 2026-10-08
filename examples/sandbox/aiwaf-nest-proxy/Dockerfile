@@ -9,9 +9,7 @@ RUN apt-get update && apt-get install -y python3 make g++ \
 WORKDIR /workspace/examples/sandbox/aiwaf-nest-proxy
 
 RUN npm_config_build_from_source=true npm install
-RUN mkdir -p node_modules/aiwaf-js/node_modules && ln -sf ../../aiwaf-wasm node_modules/aiwaf-js/node_modules/aiwaf-wasm
 RUN npm_config_build_from_source=true npm install http-proxy-middleware
-RUN mkdir -p node_modules/aiwaf-js/node_modules && ln -sf ../../aiwaf-wasm node_modules/aiwaf-js/node_modules/aiwaf-wasm
 
 EXPOSE 3005
 RUN npx aiwaf manifest --framework nest --output .aiwaf/paths.json

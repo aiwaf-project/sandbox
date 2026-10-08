@@ -1,0 +1,15 @@
+.git
+.github
+**/venv
+**/.venv
+**/node_modules
+**/vendor
+**/target
+**/__pycache__
+**/*.pyc
+**/*.log
+**/db.sqlite3
+**/.env
+examples/sandbox/results_*.json
+examples/sandbox/comparison_modes_*.json
+examples/sandbox/resources

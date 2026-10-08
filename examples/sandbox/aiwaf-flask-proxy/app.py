@@ -22,6 +22,9 @@ def create_app():
         AIWAF_MIN_AI_LOGS=int(os.environ.get("AIWAF_MIN_AI_LOGS", "10000")),
         AIWAF_FORCE_AI=os.environ.get("AIWAF_FORCE_AI", "false").lower() == "true",
         AIWAF_USE_RUST=os.environ.get("AIWAF_USE_RUST", "true").lower() == "true",
+        AIWAF_RATE_CACHE_BACKEND="redis",
+        AIWAF_REDIS_URL=os.environ.get("AIWAF_REDIS_URL", "redis://redis:6379/9"),
+        AIWAF_RATE_CACHE_KEY_PREFIX=os.environ.get("AIWAF_RATE_CACHE_KEY_PREFIX", "sandbox:flask:rate:"),
         AIWAF_PATH_RULES=[
             {
                 "PREFIX": "/socket.io/",

@@ -1,9 +1,10 @@
 FROM python:3.11-slim
 
 WORKDIR /workspace
-COPY . /workspace
 
-RUN pip install --default-timeout=1000 --no-cache-dir fastapi starlette "uvicorn[standard]" httpx numpy scikit-learn joblib aiwaf aiwaf-rust
+RUN pip install --default-timeout=1000 --no-cache-dir "aiwaf[fastapi,rust]==1.0.8" "aiwaf-rust==0.2.1" httpx
+
+COPY . /workspace
 
 WORKDIR /workspace/examples/sandbox/aiwaf-fastapi-proxy
 

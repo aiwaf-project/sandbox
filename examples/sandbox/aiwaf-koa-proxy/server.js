@@ -1,7 +1,8 @@
 const Koa = require('koa');
 const bodyParser = require('koa-bodyparser');
 const proxy = require('koa-proxies');
-const aiwaf = require('aiwaf-js');
+const aiwaf = require('aiwaf');
+const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
 const PORT = process.env.PORT || 3004;
 const TARGET_BASE_URL = process.env.TARGET_BASE_URL || 'http://localhost:3001';
@@ -16,6 +17,7 @@ app.use((ctx, next) => {
 
 app.use(aiwaf.koa({
   middlewares: ['auto'],
+  cache: redisCache,
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,

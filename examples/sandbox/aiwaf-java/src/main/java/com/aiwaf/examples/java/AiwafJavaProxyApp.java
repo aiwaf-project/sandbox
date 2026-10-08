@@ -1,6 +1,7 @@
 package com.aiwaf.examples.java;
 
 import com.aiwaf.core.AiwafConfig;
+import com.aiwaf.core.AiwafConfigFileCore;
 import com.aiwaf.core.AiwafDecision;
 import com.aiwaf.core.AiwafEngine;
 import com.aiwaf.core.AiwafRequest;
@@ -8,14 +9,15 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,15 +49,7 @@ public final class AiwafJavaProxyApp {
         int port = Integer.parseInt(env("PORT", "8080"));
         String target = env("TARGET_BASE_URL", "http://localhost:3000");
 
-        AiwafConfig config = new AiwafConfig();
-        config.geoBlockEnabled = false;
-        config.rateLimitEnabled = true;
-        config.rateLimitWindowSeconds = 10;
-        config.rateLimitMax = 20;
-        config.rateLimitFloodThreshold = 40;
-        config.honeypotEnabled = true;
-        config.uuidTamperEnabled = true;
-        config.ipKeywordBlockEnabled = true;
+        AiwafConfig config = AiwafConfigFileCore.load(Path.of(env("AIWAF_CONFIG_FILE", "/app/aiwaf.json")));
 
         AiwafJavaProxyApp app = new AiwafJavaProxyApp(target, new AiwafEngine(config));
 
@@ -71,6 +65,12 @@ public final class AiwafJavaProxyApp {
         Map<String, String> headers = flattenHeaders(exchange);
         String ip = clientIp(exchange, headers);
         String country = headers.getOrDefault("x-country-code", "US");
+        byte[] requestBody = exchange.getRequestBody().readNBytes(engine.config().maxRequestBodyBytes + 1);
+        if (requestBody.length > engine.config().maxRequestBodyBytes) {
+            exchange.sendResponseHeaders(413, -1);
+            exchange.close();
+            return;
+        }
 
         AiwafDecision decision = engine.evaluate(new AiwafRequest(
                 method,
@@ -80,7 +80,8 @@ public final class AiwafJavaProxyApp {
                 headers,
                 queryMap(exchange.getRequestURI().getRawQuery()),
                 System.currentTimeMillis(),
-                Set.of()
+                Set.of(),
+                new String(requestBody, 0, Math.min(requestBody.length, engine.config().requestBodyInspectionBytes), StandardCharsets.UTF_8)
         ));
 
         if (!decision.allowed()) {
@@ -94,7 +95,6 @@ public final class AiwafJavaProxyApp {
             return;
         }
 
-        byte[] requestBody = readAll(exchange.getRequestBody());
         HttpRequest.Builder forward = HttpRequest.newBuilder()
                 .uri(upstreamUri(exchange.getRequestURI()))
                 .timeout(Duration.ofSeconds(20));
@@ -179,16 +179,13 @@ public final class AiwafJavaProxyApp {
             }
             int idx = pair.indexOf('=');
             if (idx < 0) {
-                out.put(pair, "");
+                out.put(URLDecoder.decode(pair, StandardCharsets.UTF_8), "");
             } else {
-                out.put(pair.substring(0, idx), pair.substring(idx + 1));
+                out.put(URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8),
+                        URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
             }
         }
         return out;
-    }
-
-    private static byte[] readAll(InputStream in) throws IOException {
-        return in.readAllBytes();
     }
 
     private static String env(String key, String fallback) {

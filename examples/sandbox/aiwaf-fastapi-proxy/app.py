@@ -38,7 +38,12 @@ AIWAF(
     },
     header_validation={"enabled": True, "block_suspicious": True, "quality_threshold": 3},
     ip_keyword_block={"enabled": True},
-    rate_limiting={"enabled": True, "window_seconds": 10, "max_requests": 20, "flood_threshold": 40},
+    rate_limiting={
+        "enabled": True, "window_seconds": 10, "max_requests": 20, "flood_threshold": 40,
+        "cache_backend": "redis",
+        "redis_url": os.environ.get("AIWAF_REDIS_URL", "redis://redis:6379/10"),
+        "cache_key_prefix": os.environ.get("AIWAF_RATE_CACHE_KEY_PREFIX", "sandbox:fastapi:rate:"),
+    },
     geo_block={"enabled": False},
     ai_anomaly={"enabled": False},
     uuid_tamper={"enabled": True},

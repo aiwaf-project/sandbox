@@ -531,7 +531,17 @@ def run_test_suite(
     }
 
     for attack_name, attack_fn in test_list:
-        results = attack_fn(base_url)
+        # Stateful attacks must keep a client identity throughout the scenario.
+        # Each scenario gets a fresh identity; unrelated probes can still rotate.
+        set_default_headers(headers)
+        if attack_name in {
+            "brute_force", "credential_stuffing", "burst", "burst_mixed", "php_burst",
+        }:
+            set_default_headers(_get_default_headers("GET", base_url))
+        try:
+            results = attack_fn(base_url)
+        finally:
+            set_default_headers(headers)
         summary = summarize(results)
         report["attacks"].append(
             {
@@ -545,6 +555,7 @@ def run_test_suite(
         )
 
     report["finishedAt"] = _utc_iso()
+    set_default_headers(headers)
     if output_file:
         output_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"Saved {output_file}")

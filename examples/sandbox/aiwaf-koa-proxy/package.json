@@ -8,10 +8,11 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-js": "*",
-    "aiwaf-wasm": "*",
+    "aiwaf-wasm": "0.2.0",
     "koa": "^2.15.4",
     "koa-bodyparser": "^4.4.1",
-    "koa-proxies": "^0.12.4"
+    "koa-proxies": "^0.12.4",
+    "aiwaf": "1.0.2",
+    "redis": "^4.6.5"
   }
 }

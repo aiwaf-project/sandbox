@@ -1,5 +1,6 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const aiwaf = require('aiwaf-js');
+const aiwaf = require('aiwaf');
+const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
 const PORT = process.env.PORT || 3007;
 const TARGET_BASE_URL = process.env.TARGET_BASE_URL || 'http://localhost:3001';
@@ -44,6 +45,7 @@ function createCtx(req, res) {
 
 const middleware = aiwaf.adonis({
   middlewares: ['auto'],
+  cache: redisCache,
   staticKeywords: ['.php', '.env', '.git', '../'],
   dynamicTopN: 5,
   WINDOW_SEC: 10,

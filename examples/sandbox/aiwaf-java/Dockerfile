@@ -7,6 +7,7 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+COPY examples/sandbox/aiwaf-java/aiwaf.json /app/aiwaf.json
 COPY --from=build /workspace/examples/sandbox/aiwaf-java/target/aiwaf-java-example-0.1.0.jar /app/app.jar
 
 ENV PORT=8080

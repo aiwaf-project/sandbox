@@ -1,6 +1,7 @@
 const Hapi = require('@hapi/hapi');
 const H2o2 = require('@hapi/h2o2');
-const aiwaf = require('aiwaf-js');
+const aiwaf = require('aiwaf');
+const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
 const PORT = process.env.PORT || 3003;
 const TARGET_BASE_URL = process.env.TARGET_BASE_URL || 'http://localhost:3001';
@@ -13,7 +14,8 @@ async function start() {
     plugin: aiwaf.hapi,
     options: {
       middlewares: ['auto'],
-      staticKeywords: ['.php', '.env', '.git', '../'],
+      cache: redisCache,
+  staticKeywords: ['.php', '.env', '.git', '../'],
       dynamicTopN: 5,
       WINDOW_SEC: 10,
       MAX_REQ: 25,

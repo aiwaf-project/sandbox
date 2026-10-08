@@ -3,9 +3,12 @@ FROM php:8.0-cli
 WORKDIR /workspace
 COPY . /workspace
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends git unzip libzip-dev libsqlite3-dev \
+RUN sed -i 's|deb.debian.org/debian-security|archive.debian.org/debian-security|g; s|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list \
+  && apt-get -o Acquire::Check-Valid-Until=false update \
+  && apt-get install -y --no-install-recommends git unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS \
   && docker-php-ext-install zip pdo_sqlite \
+  && pecl install redis-6.1.0 \
+  && docker-php-ext-enable redis \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

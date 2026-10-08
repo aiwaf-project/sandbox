@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../common/proxy_helpers.php';
 
 use AIWAF\AIWAF;
-use AIWAF\Adapters\DbAdapter;
 use AIWAF\Config;
-use AIWAF\RateLimiter;
 
 Config::$knownPaths = ['/wp-json', '/wp-content', '/wp-includes', '/wp-admin'];
 Config::$keywordDetectionThreshold = 1;
@@ -19,9 +17,8 @@ if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $_SERVER['REMOTE_ADDR'] = $ip;
     }
 }
-$dbPath = (string) (getenv('AIWAF_RATE_LIMIT_DB_PATH') ?: (__DIR__ . '/../../../resources/aiwaf.sqlite'));
-$pdo = new PDO('sqlite:' . $dbPath);
-RateLimiter::initAdapter(new DbAdapter($pdo));
+require_once __DIR__ . '/../common/rate_limit.php';
+aiwaf_init_redis_rate_limit();
 AIWAF::protect();
 
 $targetBase = (string) getenv('TARGET_BASE_URL');

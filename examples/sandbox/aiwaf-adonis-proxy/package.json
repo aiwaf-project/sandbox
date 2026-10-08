@@ -7,8 +7,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-js": "*",
-    "aiwaf-wasm": "*",
-    "http-proxy-middleware": "^3.0.0"
+    "aiwaf-wasm": "0.2.0",
+    "http-proxy-middleware": "^3.0.0",
+    "aiwaf": "1.0.2",
+    "redis": "^4.6.5"
   }
 }

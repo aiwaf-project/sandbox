@@ -1,0 +1,10 @@
+{
+  "geo_block": {"enabled": false},
+  "ai_anomaly": {"enabled": false},
+  "rate_limiting": {
+    "enabled": true,
+    "window_seconds": 10,
+    "max_requests": 20,
+    "flood_threshold": 40
+  }
+}

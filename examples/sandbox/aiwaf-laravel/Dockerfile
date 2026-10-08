@@ -4,8 +4,10 @@ WORKDIR /workspace
 COPY . /workspace
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git unzip libzip-dev libsqlite3-dev \
+  && apt-get install -y --no-install-recommends git unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS \
   && docker-php-ext-install zip pdo_sqlite \
+  && pecl install redis-6.1.0 \
+  && docker-php-ext-enable redis \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
