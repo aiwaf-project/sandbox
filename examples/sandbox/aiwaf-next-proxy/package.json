@@ -7,12 +7,12 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-wasm": "0.2.0",
-    "http-proxy-middleware": "^3.0.0",
-    "next": "^14.2.13",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "aiwaf": "1.0.2",
-    "redis": "^4.6.5"
+    "aiwaf-wasm": "0.2.1",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "aiwaf": "file:/opt/aiwaf-js",
+    "redis": "^4.6.5",
+    "httpxy": "0.5.4"
   }
 }

@@ -1,5 +1,5 @@
 const next = require('next');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('../common/proxy');
 const aiwaf = require('aiwaf');
 const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
@@ -50,11 +50,12 @@ async function start() {
     AIWAF_MIDDLEWARE_LOGGING: true,
     AIWAF_MIDDLEWARE_LOG_PATH: process.env.AIWAF_MIDDLEWARE_LOG_PATH || 'logs/aiwaf-requests.jsonl'
   });
+  const parseBody = aiwaf.bodyParser();
 
   require('http')
     .createServer((req, res) => {
       console.log(`[sandbox-next] ${req.method} ${req.url}`);
-      return wrapped(req, res);
+      return parseBody(req, res, () => wrapped(req, res));
     })
     .listen(PORT, '0.0.0.0', () => {
       console.log(`AIWAF Next.js sandbox proxy running on port ${PORT}`);

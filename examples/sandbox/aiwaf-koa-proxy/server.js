@@ -1,6 +1,6 @@
 const Koa = require('koa');
-const bodyParser = require('koa-bodyparser');
-const proxy = require('koa-proxies');
+const { bodyParser } = require('@koa/bodyparser');
+const { createProxyMiddleware } = require('../common/proxy');
 const aiwaf = require('aiwaf');
 const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
@@ -32,11 +32,12 @@ app.use(aiwaf.koa({
   AIWAF_MIDDLEWARE_LOG_PATH: process.env.AIWAF_MIDDLEWARE_LOG_PATH || 'logs/aiwaf-requests.jsonl'
 }));
 
-app.use(proxy('/', {
-  target: TARGET_BASE_URL,
-  changeOrigin: true,
-  logs: true
-}));
+const proxy = createProxyMiddleware({ target: TARGET_BASE_URL, changeOrigin: true });
+app.use(async ctx => {
+  ctx.respond = false;
+  if (typeof ctx.request.rawBody === 'string') ctx.req.aiwafRawBody = Buffer.from(ctx.request.rawBody);
+  await proxy(ctx.req, ctx.res);
+});
 
 app.listen(PORT, () => {
   console.log(`AIWAF Koa sandbox proxy running on port ${PORT}`);

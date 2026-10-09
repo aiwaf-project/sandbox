@@ -38,9 +38,10 @@ async function start() {
   server.route({
     method: '*',
     path: '/{path*}',
+    options: { payload: { output: 'data', parse: false, maxBytes: 65536 } },
     handler: {
       proxy: {
-        uri: TARGET_BASE_URL,
+        mapUri: request => ({ uri: TARGET_BASE_URL.replace(/\/$/, '') + request.url.pathname + request.url.search }),
         passThrough: true,
         xforward: true
       }

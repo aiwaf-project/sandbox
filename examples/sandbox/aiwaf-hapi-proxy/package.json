@@ -8,10 +8,10 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-wasm": "0.2.0",
+    "aiwaf-wasm": "0.2.1",
     "@hapi/hapi": "^21.3.12",
     "@hapi/h2o2": "^10.0.4",
-    "aiwaf": "1.0.2",
+    "aiwaf": "file:/opt/aiwaf-js",
     "redis": "^4.6.5"
   }
 }

@@ -81,7 +81,7 @@ public final class AiwafJavaProxyApp {
                 queryMap(exchange.getRequestURI().getRawQuery()),
                 System.currentTimeMillis(),
                 Set.of(),
-                new String(requestBody, 0, Math.min(requestBody.length, engine.config().requestBodyInspectionBytes), StandardCharsets.UTF_8)
+                new String(requestBody, StandardCharsets.UTF_8)
         ));
 
         if (!decision.allowed()) {

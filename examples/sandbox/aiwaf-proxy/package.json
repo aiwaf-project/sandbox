@@ -8,10 +8,10 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-wasm": "0.2.0",
+    "aiwaf-wasm": "0.2.1",
     "express": "^4.21.2",
-    "http-proxy-middleware": "^3.0.0",
-    "aiwaf": "1.0.2",
-    "redis": "^4.6.5"
+    "aiwaf": "file:/opt/aiwaf-js",
+    "redis": "^4.6.5",
+    "httpxy": "0.5.4"
   }
 }

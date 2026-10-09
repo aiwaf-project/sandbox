@@ -1,4 +1,4 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('../common/proxy');
 const aiwaf = require('aiwaf');
 const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
@@ -59,15 +59,14 @@ const middleware = aiwaf.adonis({
   AIWAF_MIDDLEWARE_LOGGING: true,
   AIWAF_MIDDLEWARE_LOG_PATH: process.env.AIWAF_MIDDLEWARE_LOG_PATH || 'logs/aiwaf-requests.jsonl'
 });
+const parseBody = aiwaf.bodyParser();
 
 require('http')
-  .createServer(async (req, res) => {
+  .createServer((req, res) => parseBody(req, res, async () => {
     console.log(`[sandbox-adonis] ${req.method} ${req.url}`);
     const ctx = createCtx(req, res);
-    await middleware(ctx, () => new Promise(resolve => {
-      proxy(req, res, resolve);
-    }));
-  })
+    await middleware(ctx, () => proxy(req, res));
+  }))
   .listen(PORT, '0.0.0.0', () => {
     console.log(`AIWAF Adonis sandbox proxy running on port ${PORT}`);
     console.log(`Forwarding traffic to ${TARGET_BASE_URL}`);

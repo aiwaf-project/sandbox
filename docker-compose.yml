@@ -1,3 +1,5 @@
+x-aiwaf-source: &aiwaf-source https://github.com/aayushgauba/aiwaf.git#843a35f4fd48b4ef565e3c1ec8a42db9b1c41946
+
 services:
   redis:
     image: redis:7-alpine
@@ -18,13 +20,15 @@ services:
     ports:
       - "3001:3000"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', r => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://localhost:3000', r => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 30
 
   aiwaf-django:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-django-proxy/Dockerfile
     container_name: aiwaf_django_proxy_all
@@ -58,6 +62,8 @@ services:
 
   aiwaf-flask:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-flask-proxy/Dockerfile
     container_name: aiwaf_flask_proxy_all
@@ -84,6 +90,8 @@ services:
 
   aiwaf-fastapi:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-fastapi-proxy/Dockerfile
     container_name: aiwaf_fastapi_proxy_all
@@ -107,6 +115,8 @@ services:
 
   aiwaf:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
     container_name: aiwaf_proxy_all
@@ -135,6 +145,8 @@ services:
 
   aiwaf_fastify:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-fastify-proxy/Dockerfile
     container_name: aiwaf_fastify_proxy_all
@@ -163,6 +175,8 @@ services:
 
   aiwaf_hapi:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-hapi-proxy/Dockerfile
     container_name: aiwaf_hapi_proxy_all
@@ -191,6 +205,8 @@ services:
 
   aiwaf_koa:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-koa-proxy/Dockerfile
     container_name: aiwaf_koa_proxy_all
@@ -219,6 +235,8 @@ services:
 
   aiwaf_nest:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-nest-proxy/Dockerfile
     container_name: aiwaf_nest_proxy_all
@@ -247,6 +265,8 @@ services:
 
   aiwaf_next:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-next-proxy/Dockerfile
     container_name: aiwaf_next_proxy_all
@@ -275,6 +295,8 @@ services:
 
   aiwaf_adonis:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-adonis-proxy/Dockerfile
     container_name: aiwaf_adonis_proxy_all
@@ -303,6 +325,8 @@ services:
 
   aiwaf_sails:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-sails-proxy/Dockerfile
     container_name: aiwaf_sails_proxy_all
@@ -406,6 +430,8 @@ services:
 
   aiwaf-java:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-java/Dockerfile
     container_name: aiwaf_java_proxy_all
@@ -430,6 +456,8 @@ services:
 
   aiwaf-spring:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-spring/Dockerfile
     container_name: aiwaf_spring_proxy_all
@@ -454,6 +482,8 @@ services:
 
   aiwaf-java-r:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-java-r/Dockerfile
     container_name: aiwaf_java_r_proxy_all
@@ -478,6 +508,8 @@ services:
 
   aiwaf-spring-r:
     build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-spring-r/Dockerfile
     container_name: aiwaf_spring_r_proxy_all
@@ -498,6 +530,58 @@ services:
       redis:
         condition: service_healthy
       juice:
+        condition: service_started
+
+  security-fixture:
+    profiles: [assessment]
+    build:
+      context: .
+      dockerfile: examples/sandbox/assessment/Dockerfile
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      AIWAF_ASSESSMENT_TOKEN: ${AIWAF_ASSESSMENT_TOKEN:-sandbox-assessment-only}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  aiwaf-assessment:
+    profiles: [assessment]
+    build:
+      additional_contexts:
+        aiwaf_source: *aiwaf-source
+      context: .
+      dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
+    command: ["node", "../assessment/proxy.js"]
+    ports:
+      - "127.0.0.1:3020:3000"
+    environment:
+      AIWAF_REDIS_URL: redis://redis:6379/15
+      AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:assessment:rate:"
+      AIWAF_CLEAR_STATE_ON_START: "false"
+      AIWAF_GEO_BLOCK_ENABLED: "false"
+      AIWAF_MIN_AI_LOGS: "10000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      security-fixture:
+        condition: service_healthy
+
+  assessment-tls:
+    profiles: [assessment-tls]
+    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    ports:
+      - "127.0.0.1:8443:8443"
+      - "127.0.0.1:8444:8444"
+    volumes:
+      - ./examples/sandbox/assessment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - assessment_tls_data:/data
+    depends_on:
+      security-fixture:
+        condition: service_healthy
+      aiwaf-assessment:
         condition: service_started
 
   aiwaf-trainer:
@@ -524,6 +608,7 @@ services:
       - tests
 
 volumes:
+  assessment_tls_data:
   redis_data:
   aiwaf_logs:
   aiwaf_resources:

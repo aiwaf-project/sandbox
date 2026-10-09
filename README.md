@@ -84,9 +84,20 @@ Core components:
 
 ## Quick Start
 
-The sandbox targets the current releases in the sibling AIWAF checkout: Python
-`1.0.8`, Rust `0.2.1`, Node package `aiwaf` `1.0.2`, WASM `0.2.0`, and Java
-`1.3.0`. Spring uses Boot `4.0.8` to match AIWAF Java's Spring 7 dependencies.
+The 15 non-PHP proxies build Python and JavaScript `1.1.1` and Java `1.3.2`
+from [AIWAF on GitHub](https://github.com/aayushgauba/aiwaf), pinned to commit
+`843a35f4fd48b4ef565e3c1ec8a42db9b1c41946`. Docker BuildKit clones the
+repository as the `aiwaf_source` additional build context; a separate checkout
+is unnecessary. Builds require GitHub network access. To update the source,
+change the `x-aiwaf-source` URL in Compose and matching source labels in the
+Dockerfiles, review SDK version requirements, then rebuild. Rust/WASM remain
+registry `0.2.1`. Spring uses Boot `4.0.8` to match AIWAF Java's Spring 7 dependencies.
+Its dependency management overrides Tomcat to `11.0.25` and Jackson to
+`2.22.3`/`3.1.7` for security fixes. Node builds use a separate compiler stage
+and a digest-pinned slim runtime, with patched npm CLI components. Python
+uses a refreshed digest-pinned 3.11 base and hash-locked setuptools/wheel.
+Java/R images pin the patched Ubuntu OpenSSL packages. Runtime images copy
+only their own application and shared proxy helpers.
 Node proxies now import `aiwaf`; the old `aiwaf-js` dependency and WASM symlink
 workarounds have been removed. PHP continues to use its separate Composer package.
 
@@ -106,7 +117,34 @@ python -m pip install requests
 python -m unittest discover -s examples/sandbox -p 'test_*.py'
 node --test examples/sandbox/common/redis-cache.test.js
 python examples/sandbox/smoke-test.py
+python examples/sandbox/smoke-test.py --all --output examples/sandbox/results_aiwaf_smoke_matrix.json
+python examples/sandbox/smoke-test.py --all --burst-workers 16
+python examples/sandbox/validate-runtime-matrix.py
+python examples/sandbox/validate-login-bypass.py
+python examples/sandbox/run-source-packages.py
+python examples/sandbox/render-validation-report.py
 ```
+
+`run-source-packages.py` verifies the GitHub source label and tests the 15 non-PHP proxies, saving separate
+`results_local_*.json` evidence and `results_local_validation.md`. It runs smoke,
+SQL token-issuance assertions, the payload matrix, post-matrix login controls,
+reference application checks, and production npm audits of all eight proxy
+dependency trees plus the source-built SDK. Start the assessment profile first with
+`docker compose --profile assessment up -d --build`. PHP is excluded from this
+runner while its new release is unpublished. `--verify-only` checks the running
+source labels and SDK versions. `--skip-completed` reuses suite reports only
+when the recorded source URL and commit match; omit it for a new run.
+
+The old published-package runner expects registry versions and should not be
+used against this source build configuration. Existing reports from earlier local
+draft runs remain historical evidence; rebuild and run fresh suites for this commit.
+
+Local runtime builds use `npm ci` with lockfiles, Python wheel hashes for Linux
+x86_64/CPython 3.11, and base-image digests. Refresh Python locks explicitly with
+`python examples/sandbox/lock-python-dependencies.py` after reviewing dependency
+updates. The local dependency inventory scopes its assertion to these 15 runtime
+build declarations; PHP and helper images are excluded. It is not a full SBOM,
+OS package audit, or proof that builds are bit-for-bit identical.
 
 Rate-limit and brute-force scenarios now retain one client IP for the entire
 scenario, with a fresh generated IP for the next scenario. Other probes retain
@@ -117,6 +155,22 @@ The smoke test checks normal requests, a disallowed automation user agent, and a
 client against Node, all three Python and PHP proxies, Java, and Spring. Select individual
 targets with repeated `--target NAME=URL` arguments. It exits with a failure status
 when a proxy is unreachable, blocks normal traffic, or misses the automation/burst.
+`--all` selects all 18 proxies and `--output` saves the individual header and
+rate-limit assertions. Header casing is preserved on the wire. The runtime
+matrix uses browser headers for payload probes, except where a scenario deliberately
+overrides them, and saves per-scenario responses alongside direct generic/PHP
+baselines in `results_aiwaf_payload_matrix.json`. Its rows describe observed denials,
+not exploit prevention or correlated AIWAF decisions. Request errors produce
+exit code 1; an exit code 0 means the run completed, not that every payload was denied.
+
+The login-bypass check confirms whether two SQL payloads issue authentication
+tokens, using a normal invalid-credentials request as the control. It reports
+failures for tokens issued through the proxy and errors when the control cannot
+reach the application. Tokens are excluded from reports. The renderer combines
+saved smoke, payload, login and companion results into `results_aiwaf_validation.md`.
+Runs retain learned Redis state: later normal-request failures can expose false
+positives caused by earlier attack traffic. Burst checks require both accepted
+and denied requests, so blanket blocking cannot pass that assertion.
 
 ### Redis integration
 
@@ -188,6 +242,101 @@ Generated under `examples/sandbox/`:
 - `results_<target>_normal_<run-id>.json`
 - `results_<target>_attacks_<run-id>.json`
 - `comparison_modes_<run-id>.json`
+
+## OWASP 2025 companion assessment
+
+The payload suite does not establish coverage of all OWASP risks. The companion
+assessment adds authorization, authentication, deployment, transport, supply
+chain, business-rule, integrity, logging and exception outcomes. It keeps
+repository findings, transport findings and reference-application outcomes
+separate from the original runner's HTTP block counts.
+
+Start the optional assessment profile from this repository's root:
+
+```bash
+docker compose --profile assessment up -d --build security-fixture aiwaf-assessment
+python -m unittest discover -s examples/sandbox -p 'test_*.py' -v
+python examples/sandbox/assessment/run.py --fixture http://localhost:8090 --fixture http://localhost:3020 --npm-audit --transport-url http://localhost:3020
+```
+
+Both new ports bind to loopback. Port 8090 is the direct reference application;
+3020 runs the same checks through an Express AIWAF proxy using Redis database 15
+and the `sandbox:assessment:rate:` prefix. Its rate budget is deliberately high
+so concurrent business-rule checks can reach the application. The existing
+rate-limit smoke checks remain separate. No assessment service starts with the
+default profile, and these endpoints are not added to Juice Shop.
+
+| OWASP category | Added checks | Scope and remaining limits |
+| --- | --- | --- |
+| A01 Broken Access Control | Cross-user reads/writes, anonymous access, role spoofing, protected-field assignment and CSRF | Reference application authorization. AIWAF does not supply the application's identity/ownership policy. |
+| A02 Security Misconfiguration | Sensitive-file/debug probes and observable security response headers | Fixture and protected endpoint. Host/cloud configuration audits remain separate. |
+| A03 Software Supply Chain Failures | Hash-locked Python installs, npm locks, pinned runtime base images, npm production audit; pinned Grype image scans for Java/Python/JS/OS advisories | Fifteen non-PHP images. Advisory matches require package-location triage. Package provenance and PHP are not assessed. |
+| A04 Cryptographic Failures | TLS 1.2/1.3 with trusted certificates, rejection of TLS 1.0/1.1, untrusted certificates and incorrect hostname; PBKDF2 hashes and independent salts | Sandbox TLS termination and reference passwords. At-rest encryption and production key management remain separate. |
+| A05 Injection | SQL login-bypass assertions and benign login controls across all fifteen local integrations | Other payloads remain observations until an application outcome assertion is provided; no blanket injection pass. |
+| A06 Insecure Design | Negative quantities, idempotent replay, conflicting payloads under one idempotency key, concurrent inventory budget | Isolated reference business rules; application-owned controls. |
+| A07 Authentication Failures | Session rotation, logout/revocation/expiry, reset token actor binding/expiry/single use, MFA requirement/actor binding/replay | Reference identities. Reset delivery and MFA codes use test-only fixture controls, not a real provider. |
+| A08 Software or Data Integrity Failures | Accept original signed data; reject a modified subject and forged signature | HMAC-protected reference data. No claim about package signing or Juice Shop's integrity boundaries. |
+| A09 Security Logging and Alerting Failures | Correlate a failed login with exactly one redacted event and alert; reject modified or truncated event history | In-memory reference event/alert sink. External SIEM delivery and persistent append-only storage are not assessed. |
+| A10 Mishandling of Exceptional Conditions | Generic injected-error response and subsequent recovery; isolated real Redis/upstream connection failures; SDK outage regression tests | Live Express outage checks and Python unit/HTTP regressions. Per-runtime failover and production chaos testing remain separate. |
+
+The runner generates fresh test passwords and isolated inventory for each run,
+checks both statuses and response fields/side effects, and removes its reference
+state afterward. An unexpected WAF denial cannot pass an application check just
+because it returns 403. Regression tests run against secure and deliberately
+broken fixture modes to demonstrate that failures are detected in A04/A06/A08/A09.
+The vulnerable mode is available only via the fixture CLI for regression tests;
+the Compose service always starts in secure mode.
+
+`AIWAF_ASSESSMENT_TOKEN` can override the local control credential. Set the same
+value in the shell for Compose and the runner, then recreate the fixture. The
+default `sandbox-assessment-only` credential is test-only; this is an isolated
+reference application, not a production service. Passwords and control tokens
+are excluded from reports. Fixture state and its signing key are ephemeral.
+
+Results are written to `examples/sandbox/results_owasp_assessment.json`, separately
+from `comparison_modes_*.json`. Checks report `pass`, `fail`, `error` or
+`not_assessed`; any failure/error produces exit code 1. Current reproducibility
+gaps and local HTTP are findings, so a completed assessment can correctly exit 1.
+To exclude loopback HTTP from TLS assessment explicitly, add `--allow-local-http`;
+this records `not_assessed`, never a TLS pass. Omit `--npm-audit` for an offline
+repository check; the advisory check is then explicitly unassessed. Use
+`--audit-service aiwaf` to audit the original running Express service instead.
+Neither command installs updates or repairs findings automatically.
+
+Stop only the optional services when finished:
+
+```bash
+docker compose --profile assessment stop aiwaf-assessment security-fixture
+```
+
+Category definitions: [OWASP Top 10:2025](https://top10.owasp.org/).
+
+### Extended outcomes and TLS
+
+The TLS profile binds only to loopback. Its CA stays in a dedicated Docker
+volume; export only the public certificate and pass it explicitly to the runner.
+No host trust-store installation or disabled certificate verification is needed.
+
+```powershell
+docker compose --profile assessment --profile assessment-tls up -d --build security-fixture aiwaf-assessment assessment-tls
+New-Item -ItemType Directory -Force examples/sandbox/assessment/.tls
+docker compose --profile assessment --profile assessment-tls cp assessment-tls:/data/caddy/pki/authorities/local/root.crt examples/sandbox/assessment/.tls/root.crt
+python examples/sandbox/assessment/run.py --extended --fixture https://localhost:8443 --fixture https://localhost:8444 --ca-file examples/sandbox/assessment/.tls/root.crt --tls-url https://localhost:8443 --tls-url https://localhost:8444 --local-runtime-scope --output examples/sandbox/results_local_owasp_extended.json
+python examples/sandbox/assessment/outages.py
+python examples/sandbox/assessment/scan_images.py
+python examples/sandbox/assessment/render_report.py
+```
+
+Use both profiles together because the TLS service depends on assessment
+services. Caddy renews its short-lived local leaf certificates; restart
+`assessment-tls` after a large host clock change. The Grype scanner requires
+Docker's Linux engine and network access to its advisory database. Its image is
+pinned by digest; its database uses the dedicated `sandbox_grype_db` Docker
+volume to avoid slow SQLite access through a Windows bind mount. Caches and
+reports are ignored and excluded from build images.
+The scanner exits 1 for scan errors or high/critical findings and records lower
+severity findings too. A category can have passing scenarios and outstanding
+findings: these checks are not OWASP certification or complete risk coverage.
 
 ## Targeted Runs
 

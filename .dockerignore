@@ -1,5 +1,8 @@
 .git
 .github
+.tools
+.cache
+examples/sandbox/assessment/.tls
 **/venv
 **/.venv
 **/node_modules
@@ -11,5 +14,6 @@
 **/db.sqlite3
 **/.env
 examples/sandbox/results_*.json
+examples/sandbox/results_*.md
 examples/sandbox/comparison_modes_*.json
 examples/sandbox/resources

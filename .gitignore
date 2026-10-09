@@ -5,6 +5,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
+.tools/
+.cache/
+examples/sandbox/assessment/.tls/
 venv/
 
 # Node
@@ -39,5 +42,6 @@ logs/
 
 # Generated test artifacts
 examples/sandbox/results_*.json
+examples/sandbox/results_*.md
 examples/sandbox/comparison_modes_*.json
 examples/sandbox/resources/

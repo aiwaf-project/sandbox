@@ -1,0 +1,25 @@
+{
+    admin off
+    auto_https disable_redirects
+    skip_install_trust
+    default_sni localhost
+}
+
+https://localhost:8443 {
+    tls internal {
+        protocols tls1.2 tls1.3
+    }
+    header Strict-Transport-Security "max-age=31536000"
+    reverse_proxy security-fixture:8090
+}
+
+https://localhost:8444 {
+    tls internal {
+        protocols tls1.2 tls1.3
+    }
+    header Strict-Transport-Security "max-age=31536000"
+    reverse_proxy aiwaf-assessment:3000 {
+        # Loopback-only assessment traffic supplies independent synthetic IPs.
+        header_up X-Forwarded-For {http.request.header.X-Forwarded-For}
+    }
+}

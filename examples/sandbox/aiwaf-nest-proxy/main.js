@@ -1,7 +1,7 @@
 require('reflect-metadata');
 const { NestFactory } = require('@nestjs/core');
 const { Module } = require('@nestjs/common');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('../common/proxy');
 const aiwaf = require('aiwaf');
 const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
@@ -14,11 +14,12 @@ Module({})(AppModule);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(aiwaf.bodyParser());
 
-  app.use(aiwaf.nest({
+  const AiwafMiddleware = aiwaf.nest({
     middlewares: ['auto'],
     cache: redisCache,
-  staticKeywords: ['.php', '.env', '.git', '../'],
+    staticKeywords: ['.php', '.env', '.git', '../'],
     dynamicTopN: 5,
     WINDOW_SEC: 10,
     MAX_REQ: 25,
@@ -30,7 +31,9 @@ async function bootstrap() {
     AIWAF_REQUIRED_HEADERS: [],
     AIWAF_MIDDLEWARE_LOGGING: true,
     AIWAF_MIDDLEWARE_LOG_PATH: process.env.AIWAF_MIDDLEWARE_LOG_PATH || 'logs/aiwaf-requests.jsonl'
-  }));
+  });
+  const waf = new AiwafMiddleware();
+  app.use(waf.use.bind(waf));
 
   app.use((req, res, next) => {
     console.log(`[sandbox-nest] ${req.method} ${req.originalUrl}`);

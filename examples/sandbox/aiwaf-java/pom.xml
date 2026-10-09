@@ -8,7 +8,7 @@
   <version>0.1.0</version>
 
   <properties>
-    <aiwaf.version>1.3.0</aiwaf.version>
+    <aiwaf.version>1.3.2</aiwaf.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>

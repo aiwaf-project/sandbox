@@ -1,5 +1,5 @@
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require('../common/proxy');
 const aiwaf = require('aiwaf');
 const redisCache = require('../common/redis-cache')(require('redis').createClient);
 
