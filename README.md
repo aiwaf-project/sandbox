@@ -74,32 +74,29 @@ Core components:
 - `examples/sandbox/attack-suite.py`: primary end-to-end runner
 - `examples/sandbox/compare-results-modes.py`: normal vs attack summary
 - `examples/sandbox/compare-results.py`: per-attack comparison helper
-- `examples/attack-suite.php`: PHP-focused suite (requires PHP curl extension)
 
 ## Prerequisites
 
 - Docker Desktop or Docker Engine + Compose plugin
 - Python 3.10+ recommended
-- Optional: PHP CLI with `curl` extension if using PHP attack scripts locally
 
 ## Quick Start
 
-The 15 non-PHP proxies build Python and JavaScript `1.1.1` and Java `1.3.2`
-from [AIWAF on GitHub](https://github.com/aayushgauba/aiwaf), pinned to commit
-`843a35f4fd48b4ef565e3c1ec8a42db9b1c41946`. Docker BuildKit clones the
-repository as the `aiwaf_source` additional build context; a separate checkout
-is unnecessary. Builds require GitHub network access. To update the source,
-change the `x-aiwaf-source` URL in Compose and matching source labels in the
-Dockerfiles, review SDK version requirements, then rebuild. Rust/WASM remain
-registry `0.2.1`. Spring uses Boot `4.0.8` to match AIWAF Java's Spring 7 dependencies.
-Its dependency management overrides Tomcat to `11.0.25` and Jackson to
-`2.22.3`/`3.1.7` for security fixes. Node builds use a separate compiler stage
-and a digest-pinned slim runtime, with patched npm CLI components. Python
-uses a refreshed digest-pinned 3.11 base and hash-locked setuptools/wheel.
-Java/R images pin the patched Ubuntu OpenSSL packages. Runtime images copy
-only their own application and shared proxy helpers.
-Node proxies now import `aiwaf`; the old `aiwaf-js` dependency and WASM symlink
-workarounds have been removed. PHP continues to use its separate Composer package.
+The 15 non-PHP proxies install published releases directly from package managers:
+
+| Registry | Package | Pinned version |
+| --- | --- | --- |
+| PyPI | aiwaf | 1.1.8 |
+| PyPI | aiwaf-rust | 0.2.7 |
+| npm | aiwaf | 1.1.5 |
+| npm | aiwaf-wasm | 0.2.5 |
+| Maven Central | io.github.aiwaf-project:aiwaf-java | 1.3.5 |
+
+The pins are recorded in `examples/sandbox/package-versions.json`, Python wheel
+hash locks, npm lockfiles and the example Maven properties. No GitHub source
+build context or local SDK symlink is used. PHP continues to use its separate
+Composer package and is excluded from this release validation run. Base-image
+digests and the existing patched proxy dependencies remain pinned.
 
 From repo root:
 
@@ -121,23 +118,44 @@ python examples/sandbox/smoke-test.py --all --output examples/sandbox/results_ai
 python examples/sandbox/smoke-test.py --all --burst-workers 16
 python examples/sandbox/validate-runtime-matrix.py
 python examples/sandbox/validate-login-bypass.py
-python examples/sandbox/run-source-packages.py
-python examples/sandbox/render-validation-report.py
+python examples/sandbox/run-published-packages.py
+python examples/sandbox/assessment/render_report.py --prefix published
 ```
 
-`run-source-packages.py` verifies the GitHub source label and tests the 15 non-PHP proxies, saving separate
-`results_local_*.json` evidence and `results_local_validation.md`. It runs smoke,
-SQL token-issuance assertions, the payload matrix, post-matrix login controls,
-reference application checks, and production npm audits of all eight proxy
-dependency trees plus the source-built SDK. Start the assessment profile first with
-`docker compose --profile assessment up -d --build`. PHP is excluded from this
-runner while its new release is unpublished. `--verify-only` checks the running
-source labels and SDK versions. `--skip-completed` reuses suite reports only
-when the recorded source URL and commit match; omit it for a new run.
+`run-published-packages.py` verifies the actual installed versions in all 15
+non-PHP runtime containers. It runs smoke, SQL login-token assertions, the payload
+matrix, post-matrix controls, extended reference application/TLS checks, npm audits,
+isolated outage checks, effective runtime hardening checks and image advisory scans.
+Build the isolated npm audit tools, then start the assessment profiles:
+`docker compose --profile assessment-tools build aiwaf-audit-tools`.
+`docker compose --profile assessment --profile assessment-tls up -d --build`.
+Copy Caddy's sandbox CA from `/data/caddy/pki/authorities/local/root.crt` into
+`examples/sandbox/assessment/.tls/root.crt` before TLS checks. This explicit trust
+does not change host trust. `--verify-only` checks installed versions without
+executing suites. Reports use `results_published_` and are generated from current
+observations; no previous findings are hard-coded into the report.
 
-The old published-package runner expects registry versions and should not be
-used against this source build configuration. Existing reports from earlier local
-draft runs remain historical evidence; rebuild and run fresh suites for this commit.
+Use fresh isolated Redis/log volumes for a fresh-state run without deleting old
+volumes. A fresh image alone does not clear persistent state. Keep existing state
+when deliberately testing upgrades or retention.
+
+The 15 non-PHP serving runtimes run as UID/GID 10001, with a read-only root
+filesystem, all capabilities dropped and privilege escalation disabled. Only
+`/tmp`, `/state`, the shared `/logs` volume and Next's build cache are writable.
+Application code and installed dependencies stay read-only. `/state` is temporary
+test state and resets when the container stops or is recreated; Redis and `/logs` retain
+their existing volume lifetimes. Django's demo SQLite database is under `/state`.
+A one-shot `aiwaf-state-init` service creates log directories and migrates existing
+log ownership; it runs as root with CHOWN/DAC_OVERRIDE capabilities only. Redis,
+Juice Shop, PHP and the reference fixtures have separate security configurations.
+
+Node serving images contain no npm/npx/Yarn and start Node directly. Audits use
+the manifest and lockfile copied from each runtime in a short-lived audit tools
+container; Grype separately scans the installed image contents. Java runtime
+images remove the unused `pebble` executable. Host port bindings default to
+loopback, including the deliberately vulnerable Juice Shop target. Distribution
+updates are applied during builds; rebuild after new vendor fixes and review
+image scans. These controls do not guarantee a vulnerability-free deployment.
 
 Local runtime builds use `npm ci` with lockfiles, Python wheel hashes for Linux
 x86_64/CPython 3.11, and base-image digests. Refresh Python locks explicitly with
@@ -352,16 +370,6 @@ Normal-only against one target:
 python3 examples/sandbox/attack-suite.py http://localhost:3000 protected_node --mode normal
 ```
 
-## Expected Results
-
-Healthy behavior usually looks like:
-
-- `direct`: low or near-zero blocked percentage for attacks
-- `protected_*`: high blocked percentage for attacks
-- `normal` traffic: near-zero blocked across all targets
-
-Small variation across frameworks is normal due to middleware/runtime differences.
-
 ## PHP Configuration Notes
 
 Package:
@@ -375,56 +383,19 @@ Runtime behavior in this sandbox:
 - `AIWAF_RATE_CACHE_KEY_PREFIX` isolates rate-limit keys.
 - The routers no longer force SQLite for rate limiting.
 
-## Running PHP-Only Suite
-
-From repo root:
-
-```bash
-php examples/attack-suite.php
-php examples/compare-results-modes.php
-```
-
-If PHP reports `Call to undefined function curl_init()`, install/enable PHP curl or use the Python suite instead.
-
 ## Common Operations
 
-### Rebuild all
+Run from the repository root:
 
 ```bash
-docker compose down --remove-orphans
 docker compose up -d --build
-```
-
-### Rebuild only PHP services
-
-```bash
-docker compose build aiwaf-laravel-php81 aiwaf-symfony-php82 aiwaf-wordpress-php80
-docker compose up -d aiwaf-laravel-php81 aiwaf-symfony-php82 aiwaf-wordpress-php80
-```
-
-### Check container env
-
-```bash
-docker exec aiwaf_laravel_php81_all printenv | grep AIWAF_REDIS
-docker exec aiwaf_symfony_php82_all printenv | grep AIWAF_REDIS
-docker exec aiwaf_wordpress_php80_all printenv | grep AIWAF_REDIS
-```
-
-### Tail logs
-
-```bash
-docker logs --tail 200 aiwaf_laravel_php81_all
-docker logs --tail 200 aiwaf_symfony_php82_all
-docker logs --tail 200 aiwaf_wordpress_php80_all
-```
-
-### Check runtime health quickly
-
-```bash
 docker compose ps
-curl -I http://localhost:3001
-curl -I http://localhost:8081
+docker compose logs --tail 100 aiwaf
+docker compose exec redis redis-cli INFO keyspace
 ```
+
+Select a service name to rebuild or inspect one runtime. Keep named volumes
+when restarting so retained state remains available for validation.
 
 ## Troubleshooting
 

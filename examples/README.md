@@ -20,11 +20,11 @@ docker build -f examples/sandbox/aiwaf-spring/Dockerfile -t aiwaf-spring-example
 ## Run Together
 
 ```bash
-docker compose -f examples/sandbox/docker-compose.yml up --build
+docker compose up -d --build aiwaf-java aiwaf-spring
 ```
 
 Endpoints:
 
 - `http://localhost:8080` -> aiwaf-java proxy
-- `http://localhost:8081` -> aiwaf-spring proxy
+- `http://localhost:8084` -> aiwaf-spring proxy
 - `http://localhost:3001` -> direct Juice Shop

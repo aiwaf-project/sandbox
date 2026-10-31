@@ -14,6 +14,8 @@ examples/sandbox/assessment/.tls
 **/db.sqlite3
 **/.env
 examples/sandbox/results_*.json
+examples/results_*.json
+examples/comparison_modes_*.json
 examples/sandbox/results_*.md
 examples/sandbox/comparison_modes_*.json
 examples/sandbox/resources

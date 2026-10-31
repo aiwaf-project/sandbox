@@ -1,6 +1,37 @@
-x-aiwaf-source: &aiwaf-source https://github.com/aayushgauba/aiwaf.git#843a35f4fd48b4ef565e3c1ec8a42db9b1c41946
+# Application code is read-only; writable test state is isolated from the image.
+x-aiwaf-runtime: &aiwaf-runtime
+  user: "10001:10001"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,size=256m,mode=1777
+    - /state:rw,nosuid,nodev,size=128m,uid=10001,gid=10001,mode=0700
 
 services:
+  # One-shot ownership migration for existing shared logs; application services stay non-root.
+  aiwaf-state-init:
+    image: sandbox-aiwaf
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mkdir -p /logs/aiwaf-proxy /logs/aiwaf-fastify-proxy /logs/aiwaf-hapi-proxy /logs/aiwaf-koa-proxy /logs/aiwaf-nest-proxy /logs/aiwaf-next-proxy /logs/aiwaf-adonis-proxy /logs/aiwaf-sails-proxy /logs/aiwaf-java /logs/aiwaf-spring /logs/aiwaf-java-r /logs/aiwaf-spring-r && chown -hR 10001:10001 /logs"]
+    volumes:
+      - aiwaf_logs:/logs
+
+  # npm is confined to a short-lived audit/build image, never the serving runtime.
+  aiwaf-audit-tools:
+    profiles: [assessment-tools]
+    image: sandbox-aiwaf-audit-tools
+    build:
+      context: .
+      dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
+      target: build
+    command: ["node", "--version"]
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -18,7 +49,7 @@ services:
     container_name: juice_shop_all
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     healthcheck:
       test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://localhost:3000', r => process.exit(r.statusCode >= 200 && r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
@@ -26,14 +57,13 @@ services:
       retries: 30
 
   aiwaf-django:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-django-proxy/Dockerfile
     container_name: aiwaf_django_proxy_all
     ports:
-      - "3009:3009"
+      - "127.0.0.1:3009:3009"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/8
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:django:rate:"
@@ -53,6 +83,8 @@ services:
       AIWAF_DEBUG_WASM_HEADERS: "true"
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -61,14 +93,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf-flask:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-flask-proxy/Dockerfile
     container_name: aiwaf_flask_proxy_all
     ports:
-      - "3010:3010"
+      - "127.0.0.1:3010:3010"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/9
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:flask:rate:"
@@ -81,6 +112,8 @@ services:
       AIWAF_FORCE_AI: "false"
       AIWAF_USE_RUST: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -89,14 +122,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf-fastapi:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-fastapi-proxy/Dockerfile
     container_name: aiwaf_fastapi_proxy_all
     ports:
-      - "3011:3011"
+      - "127.0.0.1:3011:3011"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/10
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:fastapi:rate:"
@@ -106,6 +138,8 @@ services:
       AIWAF_LOG_DIR: /logs
       AIWAF_LOG_FORMAT: json
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -114,14 +148,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
     container_name: aiwaf_proxy_all
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/0
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:aiwaf:rate:"
@@ -136,6 +169,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -144,14 +179,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_fastify:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-fastify-proxy/Dockerfile
     container_name: aiwaf_fastify_proxy_all
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/1
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:fastify:rate:"
@@ -166,6 +200,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -174,14 +210,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_hapi:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-hapi-proxy/Dockerfile
     container_name: aiwaf_hapi_proxy_all
     ports:
-      - "3003:3003"
+      - "127.0.0.1:3003:3003"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/2
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:hapi:rate:"
@@ -196,6 +231,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -204,14 +241,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_koa:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-koa-proxy/Dockerfile
     container_name: aiwaf_koa_proxy_all
     ports:
-      - "3004:3004"
+      - "127.0.0.1:3004:3004"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/3
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:koa:rate:"
@@ -226,6 +262,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -234,14 +272,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_nest:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-nest-proxy/Dockerfile
     container_name: aiwaf_nest_proxy_all
     ports:
-      - "3005:3005"
+      - "127.0.0.1:3005:3005"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/4
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:nest:rate:"
@@ -256,6 +293,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -264,14 +303,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_next:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-next-proxy/Dockerfile
     container_name: aiwaf_next_proxy_all
     ports:
-      - "3006:3006"
+      - "127.0.0.1:3006:3006"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/5
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:next:rate:"
@@ -286,22 +324,27 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
         condition: service_started
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m,mode=1777
+      - /state:rw,nosuid,nodev,size=128m,uid=10001,gid=10001,mode=0700
+      - /workspace/examples/sandbox/aiwaf-next-proxy/.next:rw,nosuid,nodev,size=256m,uid=10001,gid=10001
     volumes:
       - aiwaf_logs:/logs
 
   aiwaf_adonis:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-adonis-proxy/Dockerfile
     container_name: aiwaf_adonis_proxy_all
     ports:
-      - "3007:3007"
+      - "127.0.0.1:3007:3007"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/6
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:adonis:rate:"
@@ -316,6 +359,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -324,14 +369,13 @@ services:
       - aiwaf_logs:/logs
 
   aiwaf_sails:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-sails-proxy/Dockerfile
     container_name: aiwaf_sails_proxy_all
     ports:
-      - "3008:3008"
+      - "127.0.0.1:3008:3008"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/7
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:sails:rate:"
@@ -346,6 +390,8 @@ services:
       AIWAF_MIDDLEWARE_LOG_PATH: /logs/aiwaf-requests.jsonl
       AIWAF_DEBUG_HEADERS: "true"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
@@ -359,7 +405,7 @@ services:
       dockerfile: examples/sandbox/aiwaf-laravel/Dockerfile
     container_name: aiwaf_laravel_php81_all
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/11
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:laravel-php81:rate:"
@@ -384,7 +430,7 @@ services:
       dockerfile: examples/sandbox/aiwaf-symfony/Dockerfile
     container_name: aiwaf_symfony_php82_all
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/12
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:symfony-php82:rate:"
@@ -409,7 +455,7 @@ services:
       dockerfile: examples/sandbox/aiwaf-wordpress/Dockerfile
     container_name: aiwaf_wordpress_php80_all
     ports:
-      - "8083:8083"
+      - "127.0.0.1:8083:8083"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/13
       AIWAF_RATE_CACHE_KEY_PREFIX: "sandbox:wordpress-php80:rate:"
@@ -429,14 +475,13 @@ services:
       - aiwaf_resources:/workspace/resources
 
   aiwaf-java:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-java/Dockerfile
     container_name: aiwaf_java_proxy_all
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/14
       AIWAF_STORAGE_BACKEND: redis
@@ -449,20 +494,23 @@ services:
       TARGET_BASE_URL: http://juice:3000
       PORT: 8080
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
         condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
 
   aiwaf-spring:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-spring/Dockerfile
     container_name: aiwaf_spring_proxy_all
     ports:
-      - "8084:8084"
+      - "127.0.0.1:8084:8084"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/14
       AIWAF_STORAGE_BACKEND: redis
@@ -475,20 +523,23 @@ services:
       TARGET_BASE_URL: http://juice:3000
       PORT: 8084
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
         condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
 
   aiwaf-java-r:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-java-r/Dockerfile
     container_name: aiwaf_java_r_proxy_all
     ports:
-      - "8085:8085"
+      - "127.0.0.1:8085:8085"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/14
       AIWAF_STORAGE_BACKEND: redis
@@ -501,20 +552,23 @@ services:
       TARGET_BASE_URL: http://juice:3000
       PORT: 8085
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
         condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
 
   aiwaf-spring-r:
+    <<: *aiwaf-runtime
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-spring-r/Dockerfile
     container_name: aiwaf_spring_r_proxy_all
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     environment:
       AIWAF_REDIS_URL: redis://redis:6379/14
       AIWAF_STORAGE_BACKEND: redis
@@ -527,10 +581,14 @@ services:
       TARGET_BASE_URL: http://juice:3000
       PORT: 8086
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       juice:
         condition: service_started
+    volumes:
+      - aiwaf_logs:/logs
 
   security-fixture:
     profiles: [assessment]
@@ -548,10 +606,9 @@ services:
       retries: 20
 
   aiwaf-assessment:
+    <<: *aiwaf-runtime
     profiles: [assessment]
     build:
-      additional_contexts:
-        aiwaf_source: *aiwaf-source
       context: .
       dockerfile: examples/sandbox/aiwaf-proxy/Dockerfile
     command: ["node", "../assessment/proxy.js"]
@@ -564,10 +621,14 @@ services:
       AIWAF_GEO_BLOCK_ENABLED: "false"
       AIWAF_MIN_AI_LOGS: "10000"
     depends_on:
+      aiwaf-state-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       security-fixture:
         condition: service_healthy
+    volumes:
+      - aiwaf_logs:/logs
 
   assessment-tls:
     profiles: [assessment-tls]

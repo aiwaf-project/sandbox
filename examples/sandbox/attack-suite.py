@@ -667,7 +667,7 @@ def run_default_comparison() -> None:
         print(f"\nRunning normal traffic tests for {target['name']}...")
         normal_headers: DefaultHeaders
         if is_php_target:
-            # Match examples/attack-suite.php behavior for PHP targets.
+            # PHP normal probes use the router's default client address.
             normal_headers = make_header_generator({}, None)
         else:
             normal_headers = make_header_generator({"x-forwarded-for": target["normalIp"]}, target["normalIpGenerator"])

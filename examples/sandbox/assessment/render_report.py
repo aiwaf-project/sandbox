@@ -1,17 +1,23 @@
 """Combine measured outcomes without presenting scenario passes as certification."""
 from collections import Counter
+import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
+PREFIX = 'local'
 
 
 def read(name):
-    return json.loads((HERE / ('results_local_' + name + '.json')).read_text())
+    return json.loads((HERE / ('results_' + PREFIX + '_' + name + '.json')).read_text())
 
 
 def main():
+    global PREFIX
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--prefix', choices=('local', 'published'), default='local')
+    PREFIX = parser.parse_args().prefix
     extended, outages, scans = read('owasp_extended'), read('outages'), read('image_advisories')
     login, audits, payload = read('login_after_matrix'), read('npm_audits'), read('payload')
     observations = [row for rows in payload['targets'].values() for row in rows]
@@ -30,11 +36,10 @@ def main():
                            'status': evidence['verdict'], 'evidence': evidence})
     lines = ['# OWASP 2025 sandbox outcomes', '',
              'Generated: ' + datetime.now(timezone.utc).isoformat(), '',
-             'Local Python/JavaScript 1.1.1 and Java 1.3.2; PHP excluded.', '',
+             'Package versions and image IDs are recorded in the matching versions report; PHP excluded.', '',
              'Scenario passes below are measured checks, not complete category coverage or OWASP certification.', '',
              f'Payload matrix: {len(observations)} observations; {request_errors} scenarios with request errors. '
-             'Django was rerun in isolation after earlier timeouts during concurrent validation; '
-             'the other completed runtime observations were retained.', '',
+             'All observations belong to this recorded run.', '',
              '| Category | Passed checks | Failures/errors | Not assessed |',
              '| --- | --- | --- | --- |']
     for category in ('A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A07', 'A08', 'A09', 'A10'):
@@ -52,9 +57,9 @@ def main():
               '- A01/A06/A07/A08: authorization, sessions, reset tokens, MFA, business rules and signed data are reference application controls. AIWAF does not implement those identity or business policies.',
               '- A02/A04: loopback fixture headers and Caddy TLS termination are measured. Production/cloud configuration, at-rest encryption and production key management are not audited.',
               '- A03: npm production audit plus pinned Grype image scans cover the listed non-PHP images. Advisory matches need location/exploitability triage; build provenance and package signing remain separate.',
-              '- A05: two token-issuing SQL login bypasses are denied in fifteen integrations. The 375-case payload matrix records observations and cannot establish exploit prevention for every payload.',
+              '- A05: the login report records token-issuance outcomes for two SQL payloads in each integration. The payload matrix records observations and cannot establish exploit prevention for every payload.',
               '- A09: redaction, event tampering/truncation and an in-process fixture alert sink are tested. External SIEM delivery and persistent append-only storage remain unassessed.',
-              '- A10: reference application exception/recovery, real isolated Express Redis/upstream failures, and Python rate-cache regression tests are covered. Every-runtime outage/failover testing remains separate.', '',
+              '- A10: reference application exception/recovery and isolated Express Redis/upstream failures are tested. Every-runtime outage/failover testing remains separate.', '',
               '## Failed or unassessed checks', '']
     for check in checks:
         if check['status'] in ('fail', 'error', 'not_assessed'):
@@ -71,7 +76,8 @@ def main():
     for (severity, advisory, package, version, state, versions), images in sorted(grouped.items()):
         lines.append(f'- A03 {severity} {advisory}: {package} {version}; fix state {state}, versions {list(versions)}; affected: '
                      + ', '.join(sorted(set(images))) + '.')
-    output = HERE / 'results_local_owasp_summary.md'
+    lines = [line.replace('results_local_', 'results_' + PREFIX + '_') for line in lines]
+    output = HERE / ('results_' + PREFIX + '_owasp_summary.md')
     output.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print(output)
 

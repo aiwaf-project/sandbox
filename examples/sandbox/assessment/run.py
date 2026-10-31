@@ -10,6 +10,7 @@ import re
 import secrets
 import ssl
 import subprocess
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -71,13 +72,27 @@ def supply_chain(root, runtime_scope=False):
 
 
 def npm_audit(root, service="aiwaf-assessment", workdir=None):
-    command = ["docker", "compose", "exec", "-T"]
-    if workdir:
-        command += ["--workdir", workdir]
-    command += [service, "npm", "audit", "--omit=dev", "--json"]
-    scope = f"running {service} image only" + (f" ({workdir})" if workdir else "")
+    # Audit the exact manifest and lock shipped in the runtime, using npm only
+    # in the isolated tools image. Serving images deliberately contain no npm.
+    scope = f"{service} shipped production lockfile, isolated audit tools" + (f" ({workdir})" if workdir else "")
     try:
-        response = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=120)
+        cache = root / ".cache"
+        cache.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="npm-audit-", dir=cache) as directory:
+            for name in ("package.json", "package-lock.json"):
+                command = ["docker", "compose", "exec", "-T"]
+                if workdir:
+                    command += ["--workdir", workdir]
+                content = subprocess.check_output(command + [service, "cat", name], cwd=root, timeout=30)
+                (Path(directory) / name).write_bytes(content)
+            response = subprocess.run([
+                "docker", "run", "--rm", "--read-only", "--cap-drop", "ALL",
+                "--security-opt", "no-new-privileges:true", "--user", "10001:10001",
+                "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m,mode=1777",
+                "--mount", f"type=bind,source={Path(directory).resolve()},target=/audit,readonly",
+                "--workdir", "/audit", "--entrypoint", "npm", "sandbox-aiwaf-audit-tools",
+                "audit", "--omit=dev", "--package-lock-only", "--json", "--cache", "/tmp/npm"
+            ], cwd=root, capture_output=True, text=True, timeout=120)
         data = json.loads(response.stdout)
         counts = data.get("metadata", {}).get("vulnerabilities")
         if (response.returncode not in (0, 1) or not isinstance(counts, dict)
@@ -89,8 +104,8 @@ def npm_audit(root, service="aiwaf-assessment", workdir=None):
                                      "direct": entry.get("isDirect"), "range": entry.get("range"),
                                      "via": entry.get("via"), "fix_available": entry.get("fixAvailable")}
                                     for name, entry in sorted(data.get("vulnerabilities", {}).items())],
-                       "limits": "Live npm registry audit; other runtimes and OS packages are not scanned."})
-    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+                       "limits": "Live npm registry audit of the runtime's shipped lockfile; installed tree, OS and other ecosystems are not scanned here. Image scans cover installed packages."})
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
         return {"category": "A03", "check": "npm_advisories", "scope": scope,
                 "status": "error", "evidence": str(error)}
 

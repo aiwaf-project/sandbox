@@ -7,8 +7,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "aiwaf-wasm": "0.2.1",
-    "aiwaf": "file:/opt/aiwaf-js",
+    "aiwaf-wasm": "0.2.5",
+    "aiwaf": "1.1.5",
     "redis": "^4.6.5",
     "httpxy": "0.5.4"
   }
