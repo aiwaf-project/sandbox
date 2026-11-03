@@ -8,7 +8,7 @@ validation, and the optional OWASP assessment. The root
 ## Validation entry points
 
 - `run-published-packages.py`: verify and test the fifteen registry-package integrations.
-- `registry-versions.py`: inspect the package pins in `package-versions.json`.
+- `registry-versions.py`: query registries and overwrite the package pins in `package-versions.json`.
 - `smoke-test.py`: normal requests, automation, rate limits, and JSON forwarding.
 - `validate-login-bypass.py`: SQL login outcomes with benign controls.
 - `validate-runtime-matrix.py`: payload observations across selected integrations.

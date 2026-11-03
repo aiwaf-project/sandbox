@@ -12,7 +12,25 @@ This repository is designed for:
 - Generating machine-readable comparison reports
 - Verifying parity and detection performance across runtimes
 
-The stack is intentionally practical: one command to start, one suite to test, one report format to compare.
+Start with one protected endpoint, then expand to the fifteen published-package integrations. PHP examples and reference-application assessments have separate scopes. This README describes how to run checks; it does not record historical pass rates or certify OWASP compliance.
+
+## Contents
+
+- [Architecture](#architecture)
+- [Service matrix](#service-matrix)
+- [Repository layout](#repository-layout)
+- [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
+- [Standard validation workflow](#standard-validation-workflow)
+- [Redis integration](#redis-integration)
+- [OWASP companion assessment](#owasp-2025-companion-assessment)
+- [Reports and exit statuses](#reports-and-exit-statuses)
+- [Contributor tests](#contributor-tests)
+- [Dependency maintenance](#dependency-maintenance)
+- [Common operations](#common-operations)
+- [Troubleshooting](#troubleshooting)
+
+The [AIWAF sandbox documentation](https://aiwaf.org/docs/sandbox/) presents the same workflow as a tutorial, runtime reference, validation guide, OWASP scope guide, and operations guide.
 
 ## Architecture
 
@@ -32,53 +50,61 @@ Core components:
 
 ## Service Matrix
 
-### Node targets
+All published host ports bind to `127.0.0.1`. Use the test name with
+`--target NAME=URL` in smoke, login and matrix runners; use the service name with
+Docker Compose. The older attack suite uses labels such as `protected_node`.
 
-- `protected_node` (Express)
-- `protected_fastify`
-- `protected_hapi`
-- `protected_koa`
-- `protected_nest`
-- `protected_next`
-- `protected_adonis`
-- `protected_sails`
+| Test name | Compose service | Host port | Redis DB |
+| --- | --- | ---: | ---: |
+| node (Express) | aiwaf | 3000 | 0 |
+| fastify | aiwaf_fastify | 3002 | 1 |
+| hapi | aiwaf_hapi | 3003 | 2 |
+| koa | aiwaf_koa | 3004 | 3 |
+| nest | aiwaf_nest | 3005 | 4 |
+| next | aiwaf_next | 3006 | 5 |
+| adonis | aiwaf_adonis | 3007 | 6 |
+| sails | aiwaf_sails | 3008 | 7 |
+| django | aiwaf-django | 3009 | 8 |
+| flask | aiwaf-flask | 3010 | 9 |
+| fastapi | aiwaf-fastapi | 3011 | 10 |
+| java | aiwaf-java | 8080 | 14 |
+| spring | aiwaf-spring | 8084 | 14 |
+| java-r | aiwaf-java-r | 8085 | 14 |
+| spring-r | aiwaf-spring-r | 8086 | 14 |
+| laravel (separate PHP package) | aiwaf-laravel-php81 | 8081 | 11 |
+| symfony (separate PHP package) | aiwaf-symfony-php82 | 8082 | 12 |
+| wordpress (separate PHP package) | aiwaf-wordpress-php80 | 8083 | 13 |
+| direct Juice Shop baseline | juice | 3001 | — |
+| direct reference fixture | security-fixture | 8090 | — |
+| protected reference fixture | aiwaf-assessment | 3020 | 15 |
+| direct / protected TLS fixture | assessment-tls | 8443 / 8444 | — |
 
-### Python targets
-
-- `protected_django`
-- `protected_flask`
-- `protected_fastapi`
-
-### PHP targets
-
-- `protected_laravel`
-- `protected_symfony`
-- `protected_wordpress`
-
-### Java targets
-
-- `protected_java`
-- `protected_spring`
-- `protected_java_r`
-- `protected_spring_r`
-
-### Baseline target
-
-- `direct` (no WAF, expected low detection)
+Java variants share DB 14 with distinct storage prefixes. R variants run the Java
+engine in images containing R; they are not independent R SDKs. Redis has no host
+port. The reference fixture and TLS services require optional profiles.
 
 ## Repository Layout
 
 - `docker-compose.yml`: root stack for all runtimes
 - `examples/`: shared examples and package setup
 - `examples/sandbox/`: runtime service implementations and test tooling
-- `examples/sandbox/attack-suite.py`: primary end-to-end runner
+- `examples/sandbox/run-published-packages.py`: full published-package validation
+- `examples/sandbox/attack-suite.py`: legacy normal/attack observations
 - `examples/sandbox/compare-results-modes.py`: normal vs attack summary
 - `examples/sandbox/compare-results.py`: per-attack comparison helper
 
 ## Prerequisites
 
 - Docker Desktop or Docker Engine + Compose plugin
-- Python 3.10+ recommended
+- Python 3.10+ and `requests` for host runners
+- Git and network access to package registries and container registries
+- Docker Desktop running Linux containers; enough disk/memory for multiple builds
+- Node.js 22 and npm only when running JavaScript helper tests on the host
+- No host PHP, Java, Maven, or AIWAF checkout needed for the Compose runtime builds
+
+Run commands from the repository root unless a block explicitly changes directory.
+The commands use `python`; use `python3` if that is your interpreter name.
+PowerShell-specific commands are labelled.
 
 ## Quick Start
 
@@ -98,42 +124,74 @@ build context or local SDK symlink is used. PHP continues to use its separate
 Composer package and is excluded from this release validation run. Base-image
 digests and the existing patched proxy dependencies remain pinned.
 
-From repo root:
+### First run: Express, Redis and Juice Shop
 
 ```bash
-docker compose up -d --build
+git clone https://github.com/aayushgauba/sandbox.git
+cd sandbox
+docker version
+docker compose version
+python -m pip install requests
+docker compose build aiwaf
+docker compose up -d aiwaf
 docker compose ps
+python examples/sandbox/smoke-test.py --target node=http://127.0.0.1:3000 --burst-workers 16 --output examples/sandbox/results_first_smoke.json
+python examples/sandbox/validate-login-bypass.py --target node=http://127.0.0.1:3000 --output examples/sandbox/results_first_login.json
 ```
+
+Build Express first: the one-shot log ownership initializer uses its
+`sandbox-aiwaf` image. Compose starts Redis, Juice Shop and that initializer as
+dependencies. The initializer finishing with exit 0 is expected. Wait for the
+upstream to be healthy before testing. Direct traffic uses port 3001; protected
+traffic uses port 3000. A normal browser request should reach Juice Shop; the
+smoke runner supplies the headers needed for synthetic traffic.
+
+### Expand to the published-package matrix
+
+```bash
+docker compose up -d --build aiwaf aiwaf_fastify aiwaf_hapi aiwaf_koa aiwaf_nest aiwaf_next aiwaf_adonis aiwaf_sails aiwaf-django aiwaf-flask aiwaf-fastapi aiwaf-java aiwaf-spring aiwaf-java-r aiwaf-spring-r
+python examples/sandbox/run-published-packages.py --verify-only
+```
+
+The verifier checks installed package versions against `package-versions.json`
+and records image IDs. It requires all fifteen services. A sibling SDK checkout
+does not change the packages inside an image. To include the three PHP examples,
+use `docker compose up -d --build` without a service selection; PHP is excluded
+from the published-package runner.
 
 ## Standard Validation Workflow
 
-Install the Python runner dependency before running the suite locally:
+After starting all fifteen integrations, prepare the reference services, isolated
+audit image and TLS trust before running the full workflow:
 
-```bash
-python -m pip install requests
-python -m unittest discover -s examples/sandbox -p 'test_*.py'
-node --test examples/sandbox/common/redis-cache.test.js
-python examples/sandbox/smoke-test.py
-python examples/sandbox/smoke-test.py --all --output examples/sandbox/results_aiwaf_smoke_matrix.json
-python examples/sandbox/smoke-test.py --all --burst-workers 16
-python examples/sandbox/validate-runtime-matrix.py
-python examples/sandbox/validate-login-bypass.py
+```powershell
+docker compose --profile assessment-tools build aiwaf-audit-tools
+docker compose --profile assessment --profile assessment-tls up -d --build security-fixture aiwaf-assessment assessment-tls
+New-Item -ItemType Directory -Force examples/sandbox/assessment/.tls
+docker compose --profile assessment --profile assessment-tls cp assessment-tls:/data/caddy/pki/authorities/local/root.crt examples/sandbox/assessment/.tls/root.crt
 python examples/sandbox/run-published-packages.py
-python examples/sandbox/assessment/render_report.py --prefix published
 ```
 
-`run-published-packages.py` verifies the actual installed versions in all 15
-non-PHP runtime containers. It runs smoke, SQL login-token assertions, the payload
-matrix, post-matrix controls, extended reference application/TLS checks, npm audits,
-isolated outage checks, effective runtime hardening checks and image advisory scans.
-Build the isolated npm audit tools, then start the assessment profiles:
-`docker compose --profile assessment-tools build aiwaf-audit-tools`.
-`docker compose --profile assessment --profile assessment-tls up -d --build`.
-Copy Caddy's sandbox CA from `/data/caddy/pki/authorities/local/root.crt` into
-`examples/sandbox/assessment/.tls/root.crt` before TLS checks. This explicit trust
-does not change host trust. `--verify-only` checks installed versions without
-executing suites. Reports use `results_published_` and are generated from current
-observations; no previous findings are hard-coded into the report.
+On POSIX shells, replace `New-Item` with
+`mkdir -p examples/sandbox/assessment/.tls`. Wait for Caddy to create the public
+root certificate before copying it. This explicit CA file does not alter the host
+trust store. Keep TLS verification enabled.
+
+The runner checks installed versions, effective runtime hardening, smoke requests,
+SQL login outcomes, payload observations, post-matrix SQL controls, extended
+reference/TLS outcomes, eight proxy production npm lockfiles, isolated outages,
+and image advisories, in that order. It writes `results_published_*` reports.
+`--verify-only` performs version checks only. `--skip-image-scans` omits Grype;
+it does not establish an image-audit pass and does not refresh an old image report.
+The full runner has no resume flag. Run suites sequentially so builds and scans do
+not distort request timing. Unit tests are described under [contributor tests](#contributor-tests).
+
+The full runner also renders `results_published_owasp_summary.md` when image
+scanning is enabled. To render a complete matching set of reports again:
+
+```bash
+python examples/sandbox/assessment/render_report.py --prefix published
+```
 
 Use fresh isolated Redis/log volumes for a fresh-state run without deleting old
 volumes. A fresh image alone does not clear persistent state. Keep existing state
@@ -290,7 +348,7 @@ default profile, and these endpoints are not added to Juice Shop.
 | A02 Security Misconfiguration | Sensitive-file/debug probes and observable security response headers | Fixture and protected endpoint. Host/cloud configuration audits remain separate. |
 | A03 Software Supply Chain Failures | Hash-locked Python installs, npm locks, pinned runtime base images, npm production audit; pinned Grype image scans for Java/Python/JS/OS advisories | Fifteen non-PHP images. Advisory matches require package-location triage. Package provenance and PHP are not assessed. |
 | A04 Cryptographic Failures | TLS 1.2/1.3 with trusted certificates, rejection of TLS 1.0/1.1, untrusted certificates and incorrect hostname; PBKDF2 hashes and independent salts | Sandbox TLS termination and reference passwords. At-rest encryption and production key management remain separate. |
-| A05 Injection | SQL login-bypass assertions and benign login controls across all fifteen local integrations | Other payloads remain observations until an application outcome assertion is provided; no blanket injection pass. |
+| A05 Injection | SQL login-bypass assertions and benign login controls across all fifteen published-package integrations | Other payloads remain observations until an application outcome assertion is provided; no blanket injection pass. |
 | A06 Insecure Design | Negative quantities, idempotent replay, conflicting payloads under one idempotency key, concurrent inventory budget | Isolated reference business rules; application-owned controls. |
 | A07 Authentication Failures | Session rotation, logout/revocation/expiry, reset token actor binding/expiry/single use, MFA requirement/actor binding/replay | Reference identities. Reset delivery and MFA codes use test-only fixture controls, not a real provider. |
 | A08 Software or Data Integrity Failures | Accept original signed data; reject a modified subject and forged signature | HMAC-protected reference data. No claim about package signing or Juice Shop's integrity boundaries. |
@@ -313,8 +371,7 @@ are excluded from reports. Fixture state and its signing key are ephemeral.
 
 Results are written to `examples/sandbox/results_owasp_assessment.json`, separately
 from `comparison_modes_*.json`. Checks report `pass`, `fail`, `error` or
-`not_assessed`; any failure/error produces exit code 1. Current reproducibility
-gaps and local HTTP are findings, so a completed assessment can correctly exit 1.
+`not_assessed`; any failure/error produces exit code 1. Findings and local HTTP can cause a completed assessment to exit 1.
 To exclude loopback HTTP from TLS assessment explicitly, add `--allow-local-http`;
 this records `not_assessed`, never a TLS pass. Omit `--npm-audit` for an offline
 repository check; the advisory check is then explicitly unassessed. Use
@@ -383,6 +440,122 @@ Runtime behavior in this sandbox:
 - `AIWAF_RATE_CACHE_KEY_PREFIX` isolates rate-limit keys.
 - The routers no longer force SQLite for rate limiting.
 
+## Reports and exit statuses
+
+Reports live under `examples/sandbox/` and are ignored by Git. They contain
+observations from your own run, not release guarantees.
+
+| Report / tool | Interpretation |
+| --- | --- |
+| `results_published_versions.json` | Installed package versions and container image IDs |
+| `results_published_run.json` | Selected targets and per-suite exit codes |
+| `results_published_smoke.json` | Normal and lowercase headers, automation, mixed accepted/denied burst, benign JSON forwarding |
+| `results_published_login.json`, `results_published_login_after_matrix.json` | Two SQL token-issuance assertions plus benign login controls before/after attack traffic |
+| `results_published_payload.json` | Payload response observations; exit 0 means no request errors, not that every exploit was prevented |
+| `results_published_hardening.json` | Effective permissions and runtime isolation checks |
+| `results_published_owasp_extended.json` | Reference application and transport assertions |
+| `results_published_npm_audits.json` | Eight production proxy lockfile audits, including their transitive dependencies |
+| `results_published_outages.json` | Isolated Express Redis/upstream connection failure checks |
+| `results_published_image_advisories.json`, `results_owasp_scan_*.json` | Image summaries and raw package-location evidence |
+| `results_published_validation.md`, `results_published_owasp_summary.md` | Aggregate runtime and category reports |
+
+Assessment statuses mean: `pass` = the specific assertion holds; `fail` = an
+assertion or advisory policy is violated; `error` = the check could not complete;
+`not_assessed` = no conclusion for that control. Failures/errors produce exit 1.
+Image scanning fails on high/critical findings or scan errors, while retaining
+lower-severity matches. The full runner exits nonzero for failed suites or
+required runtime assertions. Read the JSON evidence rather than treating an exit
+code as an OWASP score.
+
+The legacy attack suite treats HTTP 403/405/409/429 as blocked. Those responses
+may come from the application or header validation before payload inspection;
+block percentages are not proven detection rates. Reference application checks
+require the expected response fields and side effects, so an unrelated WAF denial
+cannot pass an authorization or business-rule assertion.
+
+Standalone tools use their own output defaults. Pass `--output` explicitly when
+assembling a report set. Do not mix reports from different versions, configurations
+or state. Renderers combine saved files without establishing that every component
+belongs to the same run. Retain provenance in reports, not historical results in
+this guide.
+
+## Contributor tests
+
+Python harness tests start local HTTP listeners; they do not require the full
+Compose matrix. Install `requests` first:
+
+```bash
+python -m pip install requests
+python -m unittest discover -s examples/sandbox -p 'test_*.py'
+node --test examples/sandbox/common/redis-cache.test.js
+```
+
+The shared proxy helper resolves `httpxy` from the current working directory.
+For its tests, install the Express development tree and run from that directory:
+
+```bash
+cd examples/sandbox/aiwaf-proxy
+npm ci
+node --test ../common/proxy.test.js
+cd ../../..
+```
+
+This installs host dependencies; it does not update the lockfile or the running
+container. Do not commit `node_modules`. For a proxy change, also rebuild the
+affected service and run targeted smoke and login checks. Use the full published
+workflow for changes affecting shared configuration or multiple runtimes.
+
+The separate `examples/sandbox/docker-compose.adapters.yml` describes PHP
+Redis/MySQL adapter tests. It is not an override for the root stack and is outside
+the fifteen-runtime release workflow. Review its PHPUnit/vendor prerequisites
+before using it; do not count it as coverage from the published runner.
+
+## Dependency maintenance
+
+1. Choose a narrowly scoped update and review the package's release notes and
+   advisory. Distinguish framework, transitive SDK, build-tool and OS packages.
+2. Update the affected manifests and locks together. For npm, run the targeted
+   update from the appropriate proxy directory; builds use `npm ci`. Avoid
+   `npm audit fix --force` and unrelated major-version changes.
+3. For an AIWAF release update, keep `package-versions.json`, npm manifests/locks,
+   Python installation declarations and hash locks, and Java/Spring POM
+   properties consistent. Changing the inventory alone does not install packages.
+4. Rebuild/recreate affected services. Run installed-version verification after
+   all fifteen containers reflect the selected release set, then targeted tests
+   and the full workflow as appropriate.
+5. Include old/new versions, relevant advisory, lockfile diff and test evidence in
+   the PR. Document remaining findings; do not commit generated reports.
+
+`registry-versions.py` queries public registries and **overwrites**
+`package-versions.json` with their latest versions. It is a maintainer update tool,
+not a read-only inspection command or a full upgrade. Review its diff and reconcile
+all build declarations before committing.
+
+`lock-python-dependencies.py` reads installed distributions from the running
+Django/Flask/FastAPI containers and downloads matching wheels to regenerate
+Linux x86_64 / CPython 3.11 hashes. It excludes the main `aiwaf` distribution and
+refreshes wheel/setuptools separately. Preserve/reinsert the AIWAF release pin and
+hash in each `requirements.lock`: a full refresh drops that distribution from
+its output. Review the complete diff before rebuilding. Use only containers with the intended dependency set.
+`--refresh-build-tools` replaces only wheel/setuptools lock entries. These
+commands require network access and modify committed lockfiles.
+
+Serving Node images deliberately omit npm/npx/Yarn. Use host lockfile auditing or
+the separate audit tools image:
+
+```bash
+npm audit --prefix examples/sandbox/aiwaf-proxy --omit=dev --package-lock-only
+docker compose --profile assessment-tools build aiwaf-audit-tools
+python examples/sandbox/audit-published-proxies.py
+python examples/sandbox/assessment/scan_images.py
+```
+
+Do not use the audit script's legacy `--include-sdk` option with registry images:
+it expects the removed `/opt/aiwaf-js` source installation. Proxy production locks
+already include installed AIWAF dependencies. Grype separately examines image
+contents, including other ecosystems and OS packages. A pin improves input control;
+it does not prove absence of vulnerabilities or bit-for-bit reproducibility.
+
 ## Common Operations
 
 Run from the repository root:
@@ -395,15 +568,48 @@ docker compose exec redis redis-cli INFO keyspace
 ```
 
 Select a service name to rebuild or inspect one runtime. Keep named volumes
-when restarting so retained state remains available for validation.
+when restarting so retained state remains available for validation. `docker compose
+stop` stops containers; `docker compose down` removes containers/network while
+preserving named volumes. `docker compose down -v` deletes named volume state,
+including Redis, logs and the assessment CA: use it only for an intentional reset.
+
+Optional root profiles are `assessment` (fixture/proxy), `assessment-tls` (Caddy,
+used with assessment), `assessment-tools` (audit image), `trainer` (PHP training
+example) and `tests` (PHP test image). PHP helpers are independent of the published
+runtime checks. Inspect their commands and prerequisites before use.
 
 ## Troubleshooting
+
+### Docker is unavailable or an image is missing
+
+Start Docker Desktop, select Linux containers and check `docker version` for a
+server response. `docker compose config --quiet` checks configuration without
+starting containers. If the initializer cannot find `sandbox-aiwaf`, run
+`docker compose build aiwaf` first. A successful initializer exits instead of
+remaining running. Resolve port conflicts using `docker compose ps` and the
+service matrix before changing ports; pass matching URLs to targeted runners.
+
+### Version checks or helper tests fail
+
+Rebuild/recreate containers after changing package pins; `restart` alone keeps the
+same image. A full verifier requires all fifteen non-PHP proxies. For missing
+`httpxy`, follow the contributor test working-directory instructions. For registry
+or wheel errors, check network/proxy access and the Linux x86_64/Python 3.11 lock
+platform; do not substitute unreviewed versions.
+
+### TLS or advisory checks fail
+
+Start both assessment profiles, use `localhost` for TLS and export Caddy's public
+root certificate. Restart Caddy after a large host-clock change. Advisory scanning
+requires network access and Docker's Linux engine; a scan error is not a clean
+result. npm can return nonzero even when the particular advisory being fixed has
+been removed, because other findings remain.
 
 ### Protected targets show low detection
 
 Actions:
 
-1. Rebuild/restart cleanly:
+1. Inspect logs and retained Redis state, then rebuild if configuration changed:
    - `docker compose down --remove-orphans`
    - `docker compose up -d --build`
 2. Verify env vars exist in target containers.
