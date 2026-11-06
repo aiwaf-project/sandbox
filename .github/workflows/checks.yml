@@ -1,0 +1,128 @@
+name: Sandbox checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Catches new releases and outside changes, such as an updated base image.
+    - cron: "41 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandbox-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install requests
+      - name: Check Python syntax
+        run: python -m compileall -q examples
+      - name: Test the harness
+        run: python -m unittest discover -s examples/sandbox -p 'test_*.py' -v
+      - name: Check package pins and Compose build files
+        run: python examples/sandbox/check-package-pins.py --check-registries
+
+  node-helpers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test the Redis cache helper
+        run: node --test examples/sandbox/common/redis-cache.test.js
+      - name: Install every proxy from its lockfile
+        run: |
+          for manifest in examples/sandbox/aiwaf-*/package.json; do
+            directory="$(dirname "$manifest")"
+            echo "::group::$directory"
+            npm ci --prefix "$directory" --ignore-scripts --no-audit --no-fund
+            echo "::endgroup::"
+          done
+      - name: Test the shared proxy helper
+        working-directory: examples/sandbox/aiwaf-proxy
+        run: node --test ../common/proxy.test.js
+
+  compose-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate the main stack
+        run: docker compose config -q
+      - name: Validate the assessment profiles
+        run: docker compose --profile assessment --profile assessment-tls --profile assessment-tools config -q
+      - name: Validate the adapter stack
+        run: docker compose -f examples/sandbox/docker-compose.adapters.yml config -q
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install requests
+      - name: Start one protected endpoint
+        run: |
+          docker compose build aiwaf
+          docker compose up -d aiwaf
+      - name: Wait for the proxy
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS -o /dev/null -H "User-Agent: Mozilla/5.0" -H "Accept: text/html" -H "Accept-Language: en" -H "Accept-Encoding: gzip" -H "Connection: keep-alive" http://127.0.0.1:3000/; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "The proxy wasn't ready after 5 minutes."
+          exit 1
+      - name: Run the smoke test
+        run: python examples/sandbox/smoke-test.py --target node=http://127.0.0.1:3000 --burst-workers 16
+      - name: Run the SQL login check
+        run: python examples/sandbox/validate-login-bypass.py --target node=http://127.0.0.1:3000
+      - name: Show service logs
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --tail 200
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  all-runtimes:
+    # Too slow for every pull request, so it runs weekly or on request.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install requests
+      - name: Start all fifteen runtimes
+        run: docker compose up -d --build aiwaf aiwaf_fastify aiwaf_hapi aiwaf_koa aiwaf_nest aiwaf_next aiwaf_adonis aiwaf_sails aiwaf-django aiwaf-flask aiwaf-fastapi aiwaf-java aiwaf-spring aiwaf-java-r aiwaf-spring-r
+      - name: Verify the installed package versions
+        run: python examples/sandbox/run-published-packages.py --verify-only
+      - name: Show service logs
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --tail 100
+      - name: Stop services
+        if: always()
+        run: docker compose down -v

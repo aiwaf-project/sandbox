@@ -505,6 +505,16 @@ container. Do not commit `node_modules`. For a proxy change, also rebuild the
 affected service and run targeted smoke and login checks. Use the full published
 workflow for changes affecting shared configuration or multiple runtimes.
 
+After changing versions, a lockfile or a Dockerfile path, also run:
+
+```bash
+python examples/sandbox/check-package-pins.py
+```
+
+Pull requests run these tests, validate the Compose files, install every proxy
+from its lockfile, and run the smoke and SQL login checks against one protected
+endpoint. All fifteen runtimes run weekly, or on request from the Actions tab.
+
 The separate `examples/sandbox/docker-compose.adapters.yml` describes PHP
 Redis/MySQL adapter tests. It is not an override for the root stack and is outside
 the fifteen-runtime release workflow. Review its PHPUnit/vendor prerequisites
